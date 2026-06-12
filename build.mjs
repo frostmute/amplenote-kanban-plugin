@@ -26,6 +26,7 @@ const packageNotePlugin = {
           } else if (outputPath.match(/\.js$/)) {
             // Replace Function constructor calls from dependencies if they exist
             let safeJs = file.text.replace(/new Function\(/g, 'new Error(');
+            safeJs = safeJs.replace(/eval\(/g, 'console.error(');
             const base64JavascriptContent = Buffer.from(safeJs).toString("base64");
             htmlContent = htmlContent.replace("__BASE64JAVASCRIPTCONTENT__", base64JavascriptContent);
           } else if (outputPath.match(/\.css$/)) {
@@ -41,9 +42,16 @@ const packageNotePlugin = {
         if (strippedPlugin.startsWith("var plugin = ")) {
           strippedPlugin = strippedPlugin.replace("var plugin = ", "");
         }
+        if (strippedPlugin.startsWith("var plugin=")) {
+          strippedPlugin = strippedPlugin.replace("var plugin=", "");
+        }
         if (strippedPlugin.endsWith(";")) {
           strippedPlugin = strippedPlugin.slice(0, -1);
         }
+        
+        // Final sanity check for any Function constructor or eval
+        strippedPlugin = strippedPlugin.replace(/new Function\(/g, "new Error(");
+        strippedPlugin = strippedPlugin.replace(/eval\(/g, "console.error(");
         markdownContent = markdownContent.replace("__BASE64JAVASCRIPTCONTENT__", strippedPlugin);
 
         const zip = new JSZip();
