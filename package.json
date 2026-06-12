@@ -1,0 +1,31 @@
+{
+  "name": "amplenote-embed-starter",
+  "version": "1.0.0",
+  "description": "Starter project for Amplenote embed plugins",
+  "main": "index.js",
+  "author": "Amplenote",
+  "license": "MIT",
+  "private": false,
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "create-serve": "^1.0.1",
+    "esbuild": "^0.21.5",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
+    "jszip": "^3.10.1",
+    "lucide-react": "^1.17.0",
+    "mdast-util-from-markdown": "^2.0.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "unist-util-visit": "^5.1.0"
+  },
+  "scripts": {
+    "dev": "node build.mjs --dev",
+    "build": "node build.mjs"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}
