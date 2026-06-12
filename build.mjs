@@ -58,12 +58,12 @@ const packageNotePlugin = {
         zip.file("build.html.json", htmlContent);
         
         let finalMarkdown = `---
-title: 'Plugin: Kanban board'
+title: 'Plugin: MD Kanban'
 ---
 
 | | |
 |-|-|
-|name|Kanban Board|
+|name|MD Kanban|
 |description|A plugin to transform your notes into a customizable kanban board for streamlined task management.|
 |icon|dashboard|
 |instructions|[^1]|
@@ -79,7 +79,7 @@ ${strippedPlugin}
 
     1. **Create a New Note:** Begin by creating a new note.
 
-    1. **Activate Kanban View:** Click the three dots in the top right corner, then select **"Kanban Plugin: Create Board"** to transform the note into a kanban board.
+    1. **Activate Kanban View:** Click the three dots in the top right corner, then select **"MD Kanban: Create Board"** to transform the note into a kanban board.
 `;
 
         zip.file("note.md", finalMarkdown);

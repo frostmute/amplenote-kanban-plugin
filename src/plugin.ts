@@ -5,7 +5,7 @@ export default {
   // Add an option to the Note menu to open the Kanban board
   noteOption: {
     check: function (this: any, app: any, noteUUID: string) {
-      return "Open Kanban Board";
+      return "Open Board";
     },
     run: async function (this: any, app: any, noteUUID: string) {
       // Open an embed in the sidebar to render the Kanban UI
