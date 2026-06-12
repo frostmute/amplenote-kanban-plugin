@@ -5,10 +5,6 @@ import "./embed.css"
 export default function Embed() {
   const [boardData, setBoardData] = useState<any>(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
     if (window.callAmplenotePlugin) {
       try {
@@ -21,6 +17,10 @@ export default function Embed() {
       }
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const onDragEnd = async (result: any) => {
     if (!result.destination) return;
@@ -38,10 +38,15 @@ export default function Embed() {
     const [movedTask] = sourceCol.tasks.splice(source.index, 1);
     destCol.tasks.splice(destination.index, 0, movedTask);
     
-    setBoardData(newBoard);
-
     // Is it the last column? (Bounty requirement: cross out task)
     const isLastColumn = destination.droppableId === newBoard.columns[newBoard.columns.length - 1].id;
+    if (isLastColumn) {
+      movedTask.completedAt = Math.floor(Date.now() / 1000);
+    } else {
+      movedTask.completedAt = null;
+    }
+
+    setBoardData(newBoard);
 
     if (window.callAmplenotePlugin) {
       await window.callAmplenotePlugin("moveTask", {

@@ -17,10 +17,13 @@ const packageNotePlugin = {
         console.error(errors);
       } else {
         let htmlContent = fs.readFileSync(path.join("assets", "embed.html"), "utf8");
+        let pluginCode = "";
 
         for (const file of outputFiles) {
           const { path: outputPath } = file;
-          if (outputPath.match(/\.js$/)) {
+          if (outputPath.match(/plugin\.js$/)) {
+            pluginCode = file.text;
+          } else if (outputPath.match(/\.js$/)) {
             const base64JavascriptContent = Buffer.from(file.text).toString("base64");
             htmlContent = htmlContent.replace("__BASE64JAVASCRIPTCONTENT__", base64JavascriptContent);
           } else if (outputPath.match(/\.css$/)) {
@@ -29,7 +32,17 @@ const packageNotePlugin = {
           }
         }
 
-        const markdownContent = fs.readFileSync(path.join("assets", "note.md"), "utf8");
+        let markdownContent = fs.readFileSync(path.join("assets", "note.md"), "utf8");
+        // Inject the compiled plugin TS into the markdown block
+        // Strip the IIFE wrapper so it's a raw object as expected by Amplenote
+        let strippedPlugin = pluginCode.trim();
+        if (strippedPlugin.startsWith("var plugin = ")) {
+          strippedPlugin = strippedPlugin.replace("var plugin = ", "");
+        }
+        if (strippedPlugin.endsWith(";")) {
+          strippedPlugin = strippedPlugin.slice(0, -1);
+        }
+        markdownContent = markdownContent.replace("__BASE64JAVASCRIPTCONTENT__", strippedPlugin);
 
         const zip = new JSZip();
         zip.file("build.html.json", htmlContent);
@@ -90,8 +103,13 @@ const buildOptions = {
   define: {
     "process.env.NODE_ENV": IS_DEV ? '"development"' : '"production"',
   },
-  entryPoints: [ "src/index.tsx", "src/plugin.ts" ],
+  entryPoints: {
+    "index": "src/index.tsx", 
+    "plugin": "src/plugin.ts"
+  },
   minify: !IS_DEV,
+  format: "iife",
+  globalName: "plugin",
   outdir: "build",
   sourceRoot: "src",
   plugins: [ IS_DEV ? serveBuildPlugin : packageNotePlugin ],
