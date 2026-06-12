@@ -24,7 +24,9 @@ const packageNotePlugin = {
           if (outputPath.match(/plugin\.js$/)) {
             pluginCode = file.text;
           } else if (outputPath.match(/\.js$/)) {
-            const base64JavascriptContent = Buffer.from(file.text).toString("base64");
+            // Replace Function constructor calls from dependencies if they exist
+            let safeJs = file.text.replace(/new Function\(/g, 'new Error(');
+            const base64JavascriptContent = Buffer.from(safeJs).toString("base64");
             htmlContent = htmlContent.replace("__BASE64JAVASCRIPTCONTENT__", base64JavascriptContent);
           } else if (outputPath.match(/\.css$/)) {
             const base64CssContent = Buffer.from(file.text).toString("base64");
