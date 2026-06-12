@@ -1,4 +1,5 @@
 import { parseKanbanData } from "./parser";
+import { moveTaskInMarkdown } from "./surgery";
 
 export default {
   // Add an option to the Note menu to open the Kanban board
@@ -67,10 +68,12 @@ export default {
         await app.updateTask(taskId, { completedAt: Math.floor(Date.now() / 1000) });
       }
       
-      // TODO: Implement the raw markdown string surgery to physically move the bullet point 
-      // from the source section string to the dest section string, then call:
-      // await app.replaceNoteContent(noteHandle, newSourceStr, { section: sourceSection });
-      // await app.replaceNoteContent(noteHandle, newDestStr, { section: destSection });
+      // 1. Calculate the new markdown string with the AST surgery tool
+      const newMarkdown = moveTaskInMarkdown(markdown, taskId, destColTitle, newIndex, isLastColumn);
+      
+      // 2. Diff and rewrite (Full document replace is safest here since cross-section dragging
+      // breaks Amplenote's targeted `replaceNoteContent({ section })` bounds)
+      await app.replaceNoteContent(noteHandle, newMarkdown);
       
       return true;
     }
