@@ -53,11 +53,10 @@ title: 'Plugin: Kanban board'
 
 | | |
 |-|-|
-|name<!-- {"cell":{"colwidth":123}} -->|Kanban Board<!-- {"cell":{"colwidth":779}} -->|
-|description<!-- {"cell":{"colwidth":123}} -->|A plugin to transform your notes into a customizable kanban board for streamlined task management.<!-- {"cell":{"colwidth":779}} -->|
-|icon<!-- {"cell":{"colwidth":123}} -->|dashboard<!-- {"cell":{"colwidth":779}} -->|
-|Instructions<!-- {"cell":{"colwidth":123}} -->|[^1]|
-\\
+|name|Kanban Board|
+|description|A plugin to transform your notes into a customizable kanban board for streamlined task management.|
+|icon|dashboard|
+|instructions|[^1]|
 
 \`\`\`javascript
 ${strippedPlugin}
