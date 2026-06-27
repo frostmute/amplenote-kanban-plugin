@@ -28,7 +28,7 @@ NOTE: *(Update the URL above before running this playbook)*
 
 - [ ] **Read the PR description**: If a PR URL is provided above, understand what the PR claims to do. Note the stated goals and any linked issues.
 
-<!-- maestro:halt: Cannot process PR description because the PR URL is still a placeholder (https://github.com/USER/PROJECT/pull/XXXX). Please provide a valid PR URL. -->
+<!-- maestro:halt: PR URL is still a placeholder (https://github.com/USER/PROJECT/pull/XXXX). Cannot read PR description. Please provide a valid PR URL. -->
 
 - [ ] **Identify the base branch**: Determine what branch this PR is targeting (usually `main` or `develop`).
 
