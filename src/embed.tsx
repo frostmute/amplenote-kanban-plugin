@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react"
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
 import { KanbanCore } from "./kanban-core"
+import { Board as BoardComponent } from "./components/Board"
 import "./embed.css"
 
 export default function Embed() {
@@ -24,98 +25,36 @@ export default function Embed() {
     fetchData();
   }, []);
 
-  const onDragEnd = async (result: any) => {
-    if (!result.destination) return;
-    const { source, destination } = result;
-
-    if (source.droppableId === destination.droppableId && source.index === destination.index) {
-      return;
-    }
-
-    if (!window.callAmplenotePlugin || !boardData) return;
-
-    const sourceCol = boardData.columns.find((c: any) => c.id === source.droppableId);
-    const destCol = boardData.columns.find((c: any) => c.id === destination.droppableId);
-    if (!sourceCol || !destCol) return;
-
-    const movedTask = sourceCol.tasks[source.index];
-    const isLastColumn = destination.droppableId === boardData.columns[boardData.columns.length - 1].id;
-
-    const nextMarkdown = KanbanCore.moveCardToIndex(boardData.markdown, {
-      cardText: movedTask.text,
-      fromColumn: sourceCol.title,
-      toColumn: destCol.title,
-      toIndex: destination.index,
-      markComplete: isLastColumn
-    });
-
-    if (nextMarkdown === boardData.markdown) return;
-
-    // Optimistic UI update
-    const newBoard = JSON.parse(JSON.stringify(boardData));
-    const newSourceCol = newBoard.columns.find((c: any) => c.id === source.droppableId);
-    const newDestCol = newBoard.columns.find((c: any) => c.id === destination.droppableId);
-    const [t] = newSourceCol.tasks.splice(source.index, 1);
-    newDestCol.tasks.splice(destination.index, 0, t);
-    if (isLastColumn) {
-      t.completedAt = Math.floor(Date.now() / 1000);
-    } else {
-      t.completedAt = null;
-    }
-    newBoard.markdown = nextMarkdown;
-    setBoardData(newBoard);
-
+  const handleBoardUpdate = async (markdown: string) => {
+    if (!window.callAmplenotePlugin) return;
     try {
-      await window.callAmplenotePlugin("replaceContent", { markdown: nextMarkdown });
+      await window.callAmplenotePlugin("replaceContent", { markdown });
     } catch (e) {
       console.error("Failed to update note", e);
-      await fetchData();
+      await fetchData(); // Revert on failure
+    }
+  };
+
+  const handleNavigateToNote = async (uuid: string) => {
+    if (window.callAmplenotePlugin) {
+      try {
+        await window.callAmplenotePlugin("navigateToNote", { uuid });
+      } catch (e) {
+        console.error("Failed to navigate to note", e);
+      }
     }
   };
 
   return (
-    <div className="kanban-board">
-      <h2>Amplenote Kanban</h2>
+    <div className="kanban-board-container">
       {!boardData ? (
         <p>Loading board data...</p>
       ) : (
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="board-columns">
-            {boardData.columns.map((col: any) => (
-              <Droppable droppableId={col.id} key={col.id}>
-                {(provided) => (
-                  <div
-                    className="column"
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                  >
-                    <h3>{col.title}</h3>
-                    {col.tasks.map((task: any, index: number) => (
-                      <Draggable draggableId={task.id} index={index} key={task.id}>
-                        {(provided) => (
-                          <div
-                            className="card"
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            style={{
-                              ...provided.draggableProps.style,
-                              textDecoration: task.completedAt ? "line-through" : "none",
-                              opacity: task.completedAt ? 0.6 : 1
-                            }}
-                          >
-                            {task.text}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            ))}
-          </div>
-        </DragDropContext>
+        <BoardComponent 
+           initialBoard={{ columns: boardData.columns }} 
+           onBoardUpdate={handleBoardUpdate}
+           onNavigateToNote={handleNavigateToNote}
+        />
       )}
     </div>
   );

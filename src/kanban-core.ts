@@ -104,10 +104,11 @@ function parseBoard(markdown) {
   }
   flush();
 
-  // Finalize bodies.
+  // Finalize bodies and extract images.
   for (const col of columns) {
     for (const card of col.tasks) {
       card.body = trimTrailingBlank(card.bodyLines).join("\n");
+      card.firstImage = firstImage(card);
       delete card.bodyLines;
       delete card._sawBlank;
     }
@@ -143,6 +144,9 @@ function parseTaskLine(line, lineNo) {
     rest = rest.replace(/\s*\{start:[^}]*\}/g, "");
   }
 
+  const labelsMatch = rest.match(/#([\w-]+)/g);
+  const labels = labelsMatch ? labelsMatch.map(l => l.substring(1)) : [];
+
   return {
     id: meta && meta.uuid ? meta.uuid : `card-${lineNo}`,
     rawText: rest,
@@ -150,6 +154,7 @@ function parseTaskLine(line, lineNo) {
     checked,
     meta,
     startDate,
+    labels,
     body: "",
     bodyLines: [],
     line: lineNo,
