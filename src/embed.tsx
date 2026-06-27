@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
+import { KanbanCore } from "./kanban-core"
 import "./embed.css"
 
 export default function Embed() {
@@ -8,10 +9,11 @@ export default function Embed() {
   const fetchData = async () => {
     if (window.callAmplenotePlugin) {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const noteUUID = params.get("noteUUID");
-        const data = await window.callAmplenotePlugin("getBoardData", noteUUID);
-        setBoardData(data);
+        const result = await window.callAmplenotePlugin("getBoard");
+        const markdown = result?.markdown || "";
+        const { columns } = KanbanCore.parseBoard(markdown);
+        const footnotes = KanbanCore.parseFootnotes(markdown);
+        setBoardData({ columns, footnotes, markdown });
       } catch (e) {
         console.error("Failed to fetch board data", e);
       }
@@ -24,40 +26,50 @@ export default function Embed() {
 
   const onDragEnd = async (result: any) => {
     if (!result.destination) return;
-    const { source, destination, draggableId } = result;
-    
+    const { source, destination } = result;
+
     if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
     }
 
+    if (!window.callAmplenotePlugin || !boardData) return;
+
+    const sourceCol = boardData.columns.find((c: any) => c.id === source.droppableId);
+    const destCol = boardData.columns.find((c: any) => c.id === destination.droppableId);
+    if (!sourceCol || !destCol) return;
+
+    const movedTask = sourceCol.tasks[source.index];
+    const isLastColumn = destination.droppableId === boardData.columns[boardData.columns.length - 1].id;
+
+    const nextMarkdown = KanbanCore.moveCardToIndex(boardData.markdown, {
+      cardText: movedTask.text,
+      fromColumn: sourceCol.title,
+      toColumn: destCol.title,
+      toIndex: destination.index,
+      markComplete: isLastColumn
+    });
+
+    if (nextMarkdown === boardData.markdown) return;
+
     // Optimistic UI update
     const newBoard = JSON.parse(JSON.stringify(boardData));
-    const sourceCol = newBoard.columns.find((c: any) => c.id === source.droppableId);
-    const destCol = newBoard.columns.find((c: any) => c.id === destination.droppableId);
-    
-    const [movedTask] = sourceCol.tasks.splice(source.index, 1);
-    destCol.tasks.splice(destination.index, 0, movedTask);
-    
-    // Is it the last column? (Bounty requirement: cross out task)
-    const isLastColumn = destination.droppableId === newBoard.columns[newBoard.columns.length - 1].id;
+    const newSourceCol = newBoard.columns.find((c: any) => c.id === source.droppableId);
+    const newDestCol = newBoard.columns.find((c: any) => c.id === destination.droppableId);
+    const [t] = newSourceCol.tasks.splice(source.index, 1);
+    newDestCol.tasks.splice(destination.index, 0, t);
     if (isLastColumn) {
-      movedTask.completedAt = Math.floor(Date.now() / 1000);
+      t.completedAt = Math.floor(Date.now() / 1000);
     } else {
-      movedTask.completedAt = null;
+      t.completedAt = null;
     }
-
+    newBoard.markdown = nextMarkdown;
     setBoardData(newBoard);
 
-    if (window.callAmplenotePlugin) {
-      await window.callAmplenotePlugin("moveTask", {
-        taskId: draggableId,
-        sourceColTitle: sourceCol.title,
-        destColTitle: destCol.title,
-        newIndex: destination.index,
-        isLastColumn
-      });
-      // Optionally re-fetch to ensure perfect sync
-      // await fetchData();
+    try {
+      await window.callAmplenotePlugin("replaceContent", { markdown: nextMarkdown });
+    } catch (e) {
+      console.error("Failed to update note", e);
+      await fetchData();
     }
   };
 
@@ -72,16 +84,16 @@ export default function Embed() {
             {boardData.columns.map((col: any) => (
               <Droppable droppableId={col.id} key={col.id}>
                 {(provided) => (
-                  <div 
-                    className="column" 
-                    {...provided.droppableProps} 
+                  <div
+                    className="column"
+                    {...provided.droppableProps}
                     ref={provided.innerRef}
                   >
                     <h3>{col.title}</h3>
                     {col.tasks.map((task: any, index: number) => (
                       <Draggable draggableId={task.id} index={index} key={task.id}>
                         {(provided) => (
-                          <div 
+                          <div
                             className="card"
                             ref={provided.innerRef}
                             {...provided.draggableProps}
@@ -92,7 +104,7 @@ export default function Embed() {
                               opacity: task.completedAt ? 0.6 : 1
                             }}
                           >
-                            {task.content}
+                            {task.text}
                           </div>
                         )}
                       </Draggable>

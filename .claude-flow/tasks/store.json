@@ -1,0 +1,22 @@
+{
+  "tasks": {
+    "task-1781345597191-56zb45": {
+      "taskId": "task-1781345597191-56zb45",
+      "type": "hive-mind",
+      "description": "Create a fully functional Amplenote plugin that adheres to the Plugin Bounty specsheet for 'Markdown Backed Kanban'",
+      "priority": "normal",
+      "status": "pending",
+      "progress": 0,
+      "assignedTo": [],
+      "tags": [
+        "hive-mind",
+        "consensus:none",
+        "timeout:undefineds"
+      ],
+      "createdAt": "2026-06-13T10:13:17.191Z",
+      "startedAt": null,
+      "completedAt": null
+    }
+  },
+  "version": "3.0.0"
+}

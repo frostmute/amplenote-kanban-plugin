@@ -25,6 +25,7 @@
   },
   "scripts": {
     "dev": "node build.mjs --dev",
+    "dev:local": "esbuild src/dev.tsx --bundle --servedir=public --outdir=public --watch",
     "build": "node build.mjs"
   },
   "allowScripts": {

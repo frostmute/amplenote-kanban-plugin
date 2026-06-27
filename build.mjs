@@ -17,13 +17,10 @@ const packageNotePlugin = {
         console.error(errors);
       } else {
         let htmlContent = fs.readFileSync(path.join("assets", "embed.html"), "utf8");
-        let pluginCode = "";
 
         for (const file of outputFiles) {
           const { path: outputPath } = file;
-          if (outputPath.match(/plugin\.js$/)) {
-            pluginCode = file.text;
-          } else if (outputPath.match(/\.js$/)) {
+          if (outputPath.match(/\.js$/)) {
             // Replace Function constructor calls from dependencies if they exist
             let safeJs = file.text.replace(/new Function\(/g, 'new Error(');
             safeJs = safeJs.replace(/eval\(/g, 'console.error(');
@@ -35,54 +32,11 @@ const packageNotePlugin = {
           }
         }
 
-        let markdownContent = fs.readFileSync(path.join("assets", "note.md"), "utf8");
-        // Inject the compiled plugin TS into the markdown block
-        // Strip the IIFE wrapper so it's a raw object as expected by Amplenote
-        let strippedPlugin = pluginCode.trim();
-        if (strippedPlugin.startsWith("var plugin = ")) {
-          strippedPlugin = strippedPlugin.replace("var plugin = ", "");
-        }
-        if (strippedPlugin.startsWith("var plugin=")) {
-          strippedPlugin = strippedPlugin.replace("var plugin=", "");
-        }
-        if (strippedPlugin.endsWith(";")) {
-          strippedPlugin = strippedPlugin.slice(0, -1);
-        }
-        
-        // Final sanity check for any Function constructor or eval
-        strippedPlugin = strippedPlugin.replace(/new Function\(/g, "new Error(");
-        strippedPlugin = strippedPlugin.replace(/eval\(/g, "console.error(");
-        markdownContent = markdownContent.replace("__BASE64JAVASCRIPTCONTENT__", strippedPlugin);
+        const markdownContent = fs.readFileSync(path.join("assets", "note.md"), "utf8");
 
         const zip = new JSZip();
         zip.file("build.html.json", htmlContent);
-        
-        let finalMarkdown = `---
-title: 'Plugin: MD Kanban'
----
-
-| | |
-|-|-|
-|name|MD Kanban|
-|description|A plugin to transform your notes into a customizable kanban board for streamlined task management.|
-|icon|dashboard|
-|instructions|[^1]|
-
-\`\`\`javascript
-${strippedPlugin}
-\`\`\`
-
-[build.html.json](attachment://PLACEHOLDER)
-
-[^1]: 
-    **Usage Instructions:**
-
-    1. **Create a New Note:** Begin by creating a new note.
-
-    1. **Activate Kanban View:** Click the three dots in the top right corner, then select **"MD Kanban: Create Board"** to transform the note into a kanban board.
-`;
-
-        zip.file("note.md", finalMarkdown);
+        zip.file("note.md", markdownContent);
 
         const zipContent = await zip.generateAsync({ type: "nodebuffer" });
         const outputDirectory = path.dirname(outputFiles[0].path);
@@ -93,6 +47,9 @@ ${strippedPlugin}
 
         const zipPath = path.join(outputDirectory, "plugin.zip");
         fs.writeFileSync(zipPath, zipContent);
+
+        const htmlPath = path.join(outputDirectory, "build.html.json");
+        fs.writeFileSync(htmlPath, htmlContent);
       }
     });
   }
@@ -139,13 +96,9 @@ const buildOptions = {
   define: {
     "process.env.NODE_ENV": IS_DEV ? '"development"' : '"production"',
   },
-  entryPoints: {
-    "index": "src/index.tsx", 
-    "plugin": "src/plugin.ts"
-  },
+  entryPoints: ["src/index.tsx"],
   minify: !IS_DEV,
   format: "iife",
-  globalName: "plugin",
   outdir: "build",
   sourceRoot: "src",
   plugins: [ IS_DEV ? serveBuildPlugin : packageNotePlugin ],
