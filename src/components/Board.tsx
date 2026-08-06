@@ -58,7 +58,7 @@ export const Board: React.FC<BoardProps> = ({ initialBoard, onAction, onRefresh,
       const fromColumn = isBacklog ? "" : fromTitle;
       const toColumn = destIsBacklog ? "" : toTitle;
       const isMove = source.droppableId !== destination.droppableId;
-      const finalIndex = isMove ? destination.index : Math.max(0, destination.index - 1);
+      const finalIndex = isMove ? destination.index : destination.index + (destination.index > source.index ? 1 : 0);
 
       if (isFirstColumn && !isLastColumn && fromColumn === toColumn) return;
 
