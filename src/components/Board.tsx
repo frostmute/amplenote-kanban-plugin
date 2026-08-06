@@ -53,10 +53,10 @@ export const Board: React.FC<BoardProps> = ({ initialBoard, onAction, onRefresh,
       const { title: toTitle, limit } = stripLimit(destCol.title);
       const isLastColumn = destCol === board.columns[board.columns.length - 1];
       const isFirstColumn = sourceCol === board.columns[0];
-      const isBacklog = !sourceCol.title.includes("#");
-
+      const isBacklog = sourceCol.title === "(No heading)";
+      const destIsBacklog = destCol.title === "(No heading)";
       const fromColumn = isBacklog ? "" : fromTitle;
-      const toColumn = isLastColumn ? toTitle : toTitle;
+      const toColumn = destIsBacklog ? "" : toTitle;
       const isMove = source.droppableId !== destination.droppableId;
       const finalIndex = isMove ? destination.index : Math.max(0, destination.index - 1);
 
