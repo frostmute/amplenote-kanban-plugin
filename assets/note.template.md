@@ -15,7 +15,7 @@ name: 'Markdown-Backed Kanban Board'
 |setting|Board density (comfortable \| compact)|
 
 ```javascript
-// __KANBAN_CORE_PLACEHOLDER__
+__KANBAN_CORE_PLACEHOLDER__
 
 const KANBAN_ALLOWED_ACTIONS = new Set([
   "getBoard",
