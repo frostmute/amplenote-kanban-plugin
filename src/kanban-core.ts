@@ -87,6 +87,12 @@ function parseBoard(markdown) {
 
     // Anything else is body content. Attach to the last card on this column
     // if we are still "inside" it (no blank-line gap that ends the card).
+    // Footnote definition lines (`[^id]: ...`) and their indented body
+    // belong to the document, not to any card — skip them entirely.
+    if (/^\s*\[\^[^\]]+\]:/.test(line)) {
+      lastCard = null;
+      continue;
+    }
     if (lastCard) {
       if (line.trim() === "" && lastCard._sawBlank) {
         // A second blank line ends the card body.
@@ -383,7 +389,8 @@ function addCard(markdown, { columnTitle, text, startDate = null, linkNote = nul
   if (!col) return markdown;
   let content = text.trim();
   if (linkNote && linkNote.uuid) content += ` [${linkNote.name || "note"}](https://www.amplenote.com/notes/${linkNote.uuid})`;
-  const line = `- [ ] ${content}` + (startDate ? ` ` : "");
+  if (startDate) content += ` {start:${startDate}}`;
+  const line = `- [ ] ${content}`;
   col.cards.push({ type: "task", line, bodyLines: [], blanks: 0 });
   return serialize(blocks);
 }

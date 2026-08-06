@@ -1,254 +1,159 @@
-import React, { useState, useEffect } from 'react';
-import { DragDropContext, DropResult, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Board as BoardType } from '../types';
-import { Column } from './Column';
-import { serializeBoardToMarkdown } from '../services/markdownSerializer';
+import React, { useCallback, useEffect, useState } from "react";
+import { DragDropContext, DropResult, Droppable, Draggable } from "@hello-pangea/dnd";
+import type { Board as BoardType, BoardAction, Column } from "../types";
+import { Column as ColumnComponent } from "./Column";
 
-// We'll receive the initial board state and an update callback from the parent App
 interface BoardProps {
   initialBoard: BoardType;
-  onBoardUpdate: (markdown: string) => void;
+  footnotes?: Record<string, any>;
+  onAction: (action: BoardAction) => Promise<void>;
+  onRefresh: () => Promise<void>;
   onNavigateToNote?: (uuid: string) => void;
 }
 
-export const Board: React.FC<BoardProps> = ({ initialBoard, onBoardUpdate, onNavigateToNote }) => {
+function stripLimit(title: string): { title: string; limit: number | null } {
+  const m = title.match(/^(.*?)\s*\[(\d+)\]\s*$/);
+  if (!m) return { title, limit: null };
+  return { title: m[1].trim(), limit: parseInt(m[2], 10) };
+}
+
+export const Board: React.FC<BoardProps> = ({ initialBoard, onAction, onRefresh, onNavigateToNote }) => {
   const [board, setBoard] = useState<BoardType>(initialBoard);
 
-  // Sync internal state if props change (e.g., initial load finishes)
   useEffect(() => {
     setBoard(initialBoard);
   }, [initialBoard]);
 
-  const onDragEnd = (result: DropResult) => {
-    const { destination, source, type } = result;
-
-    if (!destination) {
-      return;
-    }
-
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) {
-      return;
-    }
-
-    if (type === 'column') {
-        const newColumns = Array.from(board.columns);
-        const [movedCol] = newColumns.splice(source.index, 1);
-        newColumns.splice(destination.index, 0, movedCol);
-
-        const newBoardState = { columns: newColumns };
-        setBoard(newBoardState);
-        const newMarkdown = serializeBoardToMarkdown(newBoardState);
-        onBoardUpdate(newMarkdown);
+  const onDragEnd = useCallback(
+    (result: DropResult) => {
+      const { destination, source, type } = result;
+      if (!destination) return;
+      if (
+        destination.droppableId === source.droppableId &&
+        destination.index === source.index
+      ) {
         return;
-    }
-
-    const sourceColIndex = board.columns.findIndex(col => col.id === source.droppableId);
-    const destColIndex = board.columns.findIndex(col => col.id === destination.droppableId);
-
-    if (sourceColIndex === -1 || destColIndex === -1) {
-      return;
-    }
-
-    const newColumns = Array.from(board.columns);
-    const sourceCol = newColumns[sourceColIndex];
-    const destCol = newColumns[destColIndex];
-
-    const sourceTasks = Array.from(sourceCol.tasks);
-    const destTasks = source.droppableId === destination.droppableId 
-      ? sourceTasks 
-      : Array.from(destCol.tasks);
-
-    const [movedTask] = sourceTasks.splice(source.index, 1);
-    destTasks.splice(destination.index, 0, movedTask);
-
-      if (source.droppableId === destination.droppableId) {
-        newColumns[sourceColIndex] = { ...sourceCol, tasks: sourceTasks };
-      } else {
-        // Check column limits if they are set (limit parsed from column title, e.g. "To Do [5]")
-        const destLimitMatch = destCol.title.match(/\[(\d+)\]/);
-        if (destLimitMatch) {
-            const limit = parseInt(destLimitMatch[1], 10);
-            if (destCol.tasks.length >= limit) {
-                // Return without modifying if the limit is reached
-                alert(`Cannot move task to ${destCol.title}: Column limit (${limit}) reached.`);
-                return;
-            }
-        }
-        
-        newColumns[sourceColIndex] = { ...sourceCol, tasks: sourceTasks };
-        newColumns[destColIndex] = { ...destCol, tasks: destTasks };
       }
 
-    const newBoardState = { columns: newColumns };
-    setBoard(newBoardState);
-    
-    // Serialize and send up to Amplenote
-    const newMarkdown = serializeBoardToMarkdown(newBoardState);
-    onBoardUpdate(newMarkdown);
-  };
+      if (type === "column") {
+        const titles = board.columns.map((c) => c.title);
+        const [movedTitle] = titles.splice(source.index, 1);
+        titles.splice(destination.index, 0, movedTitle);
+        onAction({ op: "reorderColumns", args: { order: titles } });
+        return;
+      }
 
-  const handleEditTask = (taskId: string, newText: string) => {
-    const newColumns = board.columns.map(col => ({
-        ...col,
-        tasks: col.tasks.map(task => 
-            task.id === taskId ? { ...task, text: newText } : task
-        )
-    }));
-    
-    const newBoardState = { columns: newColumns };
-    setBoard(newBoardState);
-    
-    const newMarkdown = serializeBoardToMarkdown(newBoardState);
-    onBoardUpdate(newMarkdown);
-  };
+      const sourceCol = board.columns.find((c) => c.id === source.droppableId);
+      const destCol = board.columns.find((c) => c.id === destination.droppableId);
+      if (!sourceCol || !destCol) return;
+      const movedTask = sourceCol.tasks[source.index];
+      if (!movedTask) return;
 
-  const handleAddTask = (columnId: string, text: string) => {
-    const newTask = {
-        id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        text
-    };
+      const { title: fromTitle } = stripLimit(sourceCol.title);
+      const { title: toTitle, limit } = stripLimit(destCol.title);
+      const isLastColumn = destCol === board.columns[board.columns.length - 1];
+      const isFirstColumn = sourceCol === board.columns[0];
+      const isBacklog = !sourceCol.title.includes("#");
 
-    const newColumns = board.columns.map(col => {
-        if (col.id === columnId) {
-            return {
-                ...col,
-                tasks: [...col.tasks, newTask]
-            };
-        }
-        return col;
-    });
+      const fromColumn = isBacklog ? "" : fromTitle;
+      const toColumn = isLastColumn ? toTitle : toTitle;
+      const isMove = source.droppableId !== destination.droppableId;
+      const finalIndex = isMove ? destination.index : Math.max(0, destination.index - 1);
 
-    const newBoardState = { columns: newColumns };
-    setBoard(newBoardState);
-    
-    const newMarkdown = serializeBoardToMarkdown(newBoardState);
-    onBoardUpdate(newMarkdown);
-  };
+      if (isFirstColumn && !isLastColumn && fromColumn === toColumn) return;
 
-  const handleEditColumnTitle = (columnId: string, newTitle: string) => {
-    const newColumns = board.columns.map(col => 
-        col.id === columnId ? { ...col, title: newTitle } : col
-    );
+      onAction({
+        op: "moveCard",
+        args: {
+          cardText: movedTask.text,
+          fromColumn,
+          toColumn,
+          toIndex: finalIndex,
+          markComplete: isLastColumn,
+        },
+      });
 
-    const newBoardState = { columns: newColumns };
-    setBoard(newBoardState);
-    
-    const newMarkdown = serializeBoardToMarkdown(newBoardState);
-    onBoardUpdate(newMarkdown);
-  };
+      if (limit !== null && destCol.tasks.length + 1 > limit) {
+        console.warn(`Destination column "${toTitle}" limit (${limit}) will be exceeded`);
+      }
+    },
+    [board, onAction],
+  );
 
-  const handleDeleteColumn = (columnId: string) => {
-    // Find the column to delete and its tasks
-    const columnToDelete = board.columns.find(col => col.id === columnId);
-    if (!columnToDelete) return;
-
-    let uncategorizedCol = board.columns.find(col => col.id === 'uncategorized');
-    
-    // Create new columns list, excluding the deleted one
-    let newColumns = board.columns.filter(col => col.id !== columnId);
-
-    // If there wasn't an uncategorized column, we need to create one, OR add to existing
-    if (!uncategorizedCol) {
-        uncategorizedCol = {
-            id: 'uncategorized',
-            title: 'Uncategorized',
-            tasks: [...columnToDelete.tasks]
-        };
-        newColumns = [uncategorizedCol, ...newColumns];
-    } else {
-        newColumns = newColumns.map(col => {
-            if (col.id === 'uncategorized') {
-                return {
-                    ...col,
-                    tasks: [...col.tasks, ...columnToDelete.tasks]
-                };
-            }
-            return col;
-        });
-    }
-
-    const newBoardState = { columns: newColumns };
-    setBoard(newBoardState);
-    
-    const newMarkdown = serializeBoardToMarkdown(newBoardState);
-    onBoardUpdate(newMarkdown);
-  };
-
-  const handleAddColumn = () => {
-    const newTitle = prompt('Enter new column name:');
-    if (newTitle && newTitle.trim()) {
-        const newColumn = {
-            id: `col-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            title: newTitle.trim(),
-            tasks: []
-        };
-        const newBoardState = { columns: [...board.columns, newColumn] };
-        setBoard(newBoardState);
-        
-        const newMarkdown = serializeBoardToMarkdown(newBoardState);
-        onBoardUpdate(newMarkdown);
-    }
-  };
+  const handleAction = useCallback(
+    (action: BoardAction) => {
+      onAction(action);
+    },
+    [onAction],
+  );
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable droppableId="all-columns" direction="horizontal" type="column">
-        {(provided) => (
-          <div 
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            style={{ display: 'flex', overflowX: 'auto', padding: '16px', gap: '16px', height: '100vh', boxSizing: 'border-box', backgroundColor: '#f4f5f7' }}
-          >
-            {board.columns.map((column, index) => (
-              <Draggable key={column.id} draggableId={column.id} index={index}>
-                {(provided) => (
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", backgroundColor: "#f4f5f7" }}>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "8px 16px",
+          borderBottom: "1px solid #dfe1e6",
+        }}
+      >
+        <h1 style={{ fontSize: 14, fontWeight: 600, color: "#172b4d", margin: 0 }}>Markdown-Backed Kanban</h1>
+        <button
+          onClick={() => onRefresh()}
+          title="Refresh from note"
+          style={{
+            background: "transparent",
+            border: "1px solid #dfe1e6",
+            borderRadius: 4,
+            padding: "4px 8px",
+            cursor: "pointer",
+            color: "#172b4d",
+            fontSize: 14,
+          }}
+        >
+          ⟳ Refresh
+        </button>
+      </header>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="all-columns" direction="horizontal" type="column">
+          {(provided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              style={{
+                display: "flex",
+                overflowX: "auto",
+                padding: 16,
+                gap: 16,
+                flexGrow: 1,
+                boxSizing: "border-box",
+              }}
+            >
+              {board.columns.map((column, index) => (
+                <Draggable key={column.id} draggableId={column.id} index={index}>
+                  {(provided) => (
                     <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        style={{ ...provided.draggableProps.style, display: 'flex' }}
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      style={{ ...provided.draggableProps.style, display: "flex" }}
                     >
-                      <Column 
-                        column={column} 
-                        onEditTask={handleEditTask}
-                        onAddTask={handleAddTask}
-                        onEditColumnTitle={handleEditColumnTitle}
-                        onDeleteColumn={handleDeleteColumn}
+                      <ColumnComponent
+                        column={column}
+                        isFirst={index === 0}
+                        onAction={handleAction}
                         onNavigateToNote={onNavigateToNote}
                         dragHandleProps={provided.dragHandleProps}
                       />
                     </div>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-            <div style={{ minWidth: '300px' }}>
-                <button
-                    onClick={handleAddColumn}
-                    style={{
-                        width: '100%',
-                        padding: '12px',
-                        backgroundColor: 'rgba(9, 30, 66, 0.04)',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: '#172b4d',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        fontWeight: 500,
-                        fontSize: '14px',
-                        transition: 'background-color 0.2s ease'
-                    }}
-                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = 'rgba(9, 30, 66, 0.08)')}
-                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'rgba(9, 30, 66, 0.04)')}
-                >
-                    + Add another list
-                </button>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
             </div>
-          </div>
-        )}
-      </Droppable>
-    </DragDropContext>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </div>
   );
 };

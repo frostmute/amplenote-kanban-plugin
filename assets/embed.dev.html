@@ -1,14 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <link href="./index.css" rel="stylesheet" type="text/css" />
-    <script type="text/javascript">
-      // `window.callAmplenotePlugin` will be defined in the real embed environment
-      window.callAmplenotePlugin = function(...args) {
-        console.log("window.callAmplenotePlugin", args);
-      }
-    </script>
+      <meta charset="utf-8" />
+      <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' data:; style-src 'self' 'unsafe-inline' data:; img-src 'self' data: https:; connect-src 'self' https://plugins.amplenote.com; font-src 'self' data:; base-uri 'none'; form-action 'none';" />
+      <link href="./index.css" rel="stylesheet" type="text/css" />
+      <script type="text/javascript">
+        // Local mock of `window.callAmplenotePlugin` for `npm run dev`.
+        // State lives in memory; reload resets the board.
+        const _kanbanMock = (() => {
+          const initial = [
+            "# To Do",
+            "- [ ] Pick a starter column name",
+            "- [ ] Drag this card between columns",
+            "",
+            "# Doing",
+            "- [ ] Edit me by clicking the card",
+            "",
+            "# Done",
+            "- [x] Initialize the kanban project",
+          ].join("\n");
+          let markdown = initial;
+          const listeners = new Set();
+          return {
+            getMarkdown: () => markdown,
+            setMarkdown: (md) => {
+              markdown = md;
+              listeners.forEach((fn) => {
+                try { fn(markdown); } catch (e) { console.error("listener", e); }
+              });
+            },
+            subscribe: (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
+          };
+        })();
+        window.callAmplenotePlugin = async (action, payload) => {
+          if (action === "getBoard" || action === "refresh") {
+            return { markdown: _kanbanMock.getMarkdown() };
+          }
+          if (action === "applyAction") {
+            const { op, args } = payload || {};
+            const md = _kanbanMock.getMarkdown();
+            const handlers = {
+              moveCard: (a) => KanbanCore.moveCardToIndex(md, {
+                cardText: a.cardText, fromColumn: a.fromColumn, toColumn: a.toColumn,
+                toIndex: typeof a.toIndex === "number" ? a.toIndex : Number.MAX_SAFE_INTEGER,
+                markComplete: !!a.markComplete,
+              }),
+              addCard: (a) => KanbanCore.addCard(md, { columnTitle: a.columnTitle, text: a.text, startDate: a.startDate || null, linkNote: a.linkNote || null }),
+              editCard: (a) => KanbanCore.editCard(md, { columnTitle: a.columnTitle, oldText: a.oldText, newMarkdown: a.newMarkdown }),
+              setCardComplete: (a) => KanbanCore.setCardComplete(md, { columnTitle: a.columnTitle, cardText: a.cardText, complete: !!a.complete }),
+              deleteCard: (a) => KanbanCore.deleteCard(md, { columnTitle: a.columnTitle, cardText: a.cardText }),
+              addColumn: (a) => KanbanCore.addColumn(md, { title: a.title, level: a.level || 2 }),
+              renameColumn: (a) => KanbanCore.renameColumn(md, { oldTitle: a.oldTitle, newTitle: a.newTitle }),
+              deleteColumn: (a) => KanbanCore.deleteColumn(md, { title: a.title }),
+              reorderColumns: (a) => KanbanCore.reorderColumns(md, { order: a.order || [] }),
+              setCardStartDate: (a) => KanbanCore.setCardStartDate(md, { columnTitle: a.columnTitle, cardText: a.cardText, date: a.date }),
+              tagCardWithNote: (a) => KanbanCore.tagCardWithNote(md, { columnTitle: a.columnTitle, cardText: a.cardText, noteName: a.noteName, noteUUID: a.noteUUID }),
+            };
+            const fn = handlers[op];
+            if (!fn) return { error: `Unknown op: ${op}` };
+            const next = fn(args || {});
+            if (typeof next !== "string" || next === md) return { error: `Op ${op} produced no change` };
+            _kanbanMock.setMarkdown(next);
+            return { markdown: next };
+          }
+          return { error: `Unknown action: ${action}` };
+        };
+        window.addEventListener("kanban:request-refresh", () => {
+          window.dispatchEvent(new CustomEvent("kanban:markdown-updated", { detail: _kanbanMock.getMarkdown() }));
+        });
+      </script>
   </head>
   <body>
     <div id="root"></div>

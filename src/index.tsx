@@ -1,7 +1,7 @@
-import React from "react"
-import { createRoot } from "react-dom/client"
+import React from "react";
+import { createRoot } from "react-dom/client";
 
-import Embed from "./embed"
+import Embed from "./embed";
 
 const container = document.getElementById("root");
 if (container) {
@@ -9,6 +9,6 @@ if (container) {
   root.render(
     <React.StrictMode>
       <Embed />
-    </React.StrictMode>
+    </React.StrictMode>,
   );
 }
