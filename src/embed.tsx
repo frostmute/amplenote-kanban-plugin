@@ -80,7 +80,8 @@ export default function Embed() {
   const handleNavigateToNote = useCallback(async (uuid: string) => {
     if (!window.callAmplenotePlugin) return;
     try {
-      await window.callAmplenotePlugin("navigateToNote", { uuid });
+      const result = await window.callAmplenotePlugin("navigateToNote", { uuid });
+      if (result && result.error) setError(result.error);
     } catch (e) {
       setError((e && e.message) || String(e));
     }

@@ -1,12 +1,43 @@
 import serve, { error } from "create-serve";
 import esbuild from "esbuild";
 import JSZip from "jszip";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
 const IS_DEV = process.argv.includes("--dev");
 const PAYLOAD_TOKEN = "__KANBAN_CORE_PLACEHOLDER__";
+const EMBED_HASH_TOKEN = "__KANBAN_EMBED_SHA256__";
 const CSS_TOKEN = "__BASE64CSSCONTENT__";
+
+/**
+ * `kanban-core` is split into fragments so no file exceeds the repository's
+ * line limit. They are concatenated in dependency order (shared constants
+ * first, the `KanbanCore` facade last) and inlined into the plugin note so the
+ * embed and the note run identical mutators.
+ */
+const CORE_FRAGMENTS = [
+  path.join("src", "kanban", "constants.ts"),
+  path.join("src", "kanban", "helpers.ts"),
+  path.join("src", "kanban", "parse.ts"),
+  path.join("src", "kanban", "mutate.ts"),
+  path.join("src", "kanban-core.ts"),
+];
+
+function inlineKanbanCore() {
+  const body = CORE_FRAGMENTS.map((file) => {
+    const stripped = fs
+      .readFileSync(file, "utf8")
+      .replace(/^import\s[^;]*;[ \t]*$/gm, "")
+      .replace(/^export const KanbanCore/m, "const KanbanCore")
+      .replace(/^export\s+/gm, "");
+    if (/^\s*(import|export)\s/m.test(stripped)) {
+      throw new Error(`Unstripped import/export in inlined fragment: ${file}`);
+    }
+    return stripped;
+  }).join("\n");
+  return `const KanbanCore = (function() {\n${body}\nreturn KanbanCore;\n})();`;
+}
 
 function escaper(replacements) {
   return Object.keys(replacements)
@@ -64,14 +95,14 @@ const packageNotePlugin = {
       htmlContent = htmlContent.replace("__BASE64JAVASCRIPTCONTENT__", jsB64);
       htmlContent = htmlContent.replace("__BASE64CSSCONTENT__", cssB64);
 
-      const coreSource = fs.readFileSync(path.join("src", "kanban-core.ts"), "utf8");
-      const coreStripped = coreSource
-        .replace(/^export const KanbanCore/m, "const KanbanCore")
-        .replace(/^export\s+/gm, "");
-      const coreInlined = `const KanbanCore = (function() {\n${coreStripped}\nreturn KanbanCore;\n})();`;
+      const coreInlined = inlineKanbanCore();
+      const embedHash = crypto.createHash("sha256").update(htmlContent, "utf8").digest("hex");
 
       const noteTemplate = fs.readFileSync(path.join("assets", "note.template.md"), "utf8");
-      const noteContent = safeReplace(noteTemplate, { [PAYLOAD_TOKEN]: coreInlined });
+      const noteContent = safeReplace(noteTemplate, {
+        [PAYLOAD_TOKEN]: coreInlined,
+        [EMBED_HASH_TOKEN]: embedHash,
+      });
 
       const zip = new JSZip();
       zip.file("build.html.json", htmlContent);
@@ -126,6 +157,7 @@ const buildOptions = {
   bundle: true,
   define: {
     "process.env.NODE_ENV": IS_DEV ? '"development"' : '"production"',
+    __KANBAN_DEV__: IS_DEV ? "true" : "false",
   },
   entryPoints: ["src/index.tsx"],
   minify: !IS_DEV,

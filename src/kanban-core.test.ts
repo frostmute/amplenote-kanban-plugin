@@ -157,6 +157,86 @@ describe("KanbanCore.mutators", () => {
     expect(card!.body).toContain("new line two");
   });
 
+  it("editCard keeps the completion state, start date and hidden metadata", () => {
+    const md = [
+      "# To Do",
+      "- [x] Ship it {start:2026-09-01} <!-- {\"uuid\":\"abc-123\",\"completedAt\":1700000000} -->",
+    ].join("\n");
+    const next = KanbanCore.editCard(md, {
+      columnTitle: "To Do",
+      oldText: "Ship it",
+      newMarkdown: "Ship it twice\n  with a body",
+    });
+    const card = KanbanCore.parseBoard(next).columns[0].tasks[0];
+    expect(card.text).toBe("Ship it twice");
+    expect(card.checked).toBe(true);
+    expect(card.startDate).toBe("2026-09-01");
+    expect(card.meta).toEqual({ uuid: "abc-123", completedAt: 1700000000 });
+    expect(card.body).toContain("with a body");
+  });
+
+  it("editCard honours a checkbox the user typed themselves", () => {
+    const next = KanbanCore.editCard(SAMPLE, {
+      columnTitle: "To Do",
+      oldText: "Write a brief",
+      newMarkdown: "- [x] Write a brief",
+    });
+    const card = KanbanCore.parseBoard(next).columns[0].tasks[0];
+    expect(card.checked).toBe(true);
+  });
+
+  it("addCard appends to the implicit backlog when the column title is blank", () => {
+    const next = KanbanCore.addCard("- [ ] Orphan\n\n# Inbox\n- [ ] Hello\n", {
+      columnTitle: "",
+      text: "Another orphan",
+    });
+    const board = KanbanCore.parseBoard(next);
+    expect(board.columns[0].title).toBe(KanbanCore.NO_HEADING_TITLE);
+    expect(board.columns[0].tasks.map((t: { text: string }) => t.text)).toEqual(["Orphan", "Another orphan"]);
+  });
+
+  it("mutates columns whose heading carries a [n] card limit", () => {
+    const md = "## To Do [2]\n- [ ] One\n";
+    const added = KanbanCore.addCard(md, { columnTitle: "To Do [2]", text: "Two" });
+    expect(KanbanCore.parseBoard(added).columns[0].tasks.length).toBe(2);
+    const renamed = KanbanCore.renameColumn(added, { oldTitle: "To Do [2]", newTitle: "Doing [2]" });
+    expect(KanbanCore.parseBoard(renamed).columns[0].title).toBe("Doing [2]");
+    const deleted = KanbanCore.deleteColumn(renamed, { title: "Doing [2]" });
+    expect(KanbanCore.parseBoard(deleted).columns[0].title).toBe(KanbanCore.NO_HEADING_TITLE);
+  });
+
+  it("moveCardToIndex reorders inside a column even when marking complete", () => {
+    const md = "# Done\n- [ ] First\n- [ ] Second\n";
+    const next = KanbanCore.moveCardToIndex(md, {
+      cardText: "First",
+      fromColumn: "Done",
+      toColumn: "Done",
+      toIndex: 2,
+      markComplete: true,
+    });
+    const tasks = KanbanCore.parseBoard(next).columns[0].tasks;
+    expect(tasks.map((t: { text: string }) => t.text)).toEqual(["Second", "First"]);
+    expect(tasks[1].checked).toBe(true);
+  });
+
+  it("setCardStartDate and tagCardWithNote keep the metadata comment trailing", () => {
+    const md = "# To Do\n- [x] Done thing <!-- {\"uuid\":\"u-1\"} -->\n";
+    const dated = KanbanCore.setCardStartDate(md, {
+      columnTitle: "To Do",
+      cardText: "Done thing",
+      date: "2027-03-04",
+    });
+    expect(dated).toContain('{start:2027-03-04} <!-- {"uuid":"u-1"} -->');
+    const tagged = KanbanCore.tagCardWithNote(dated, {
+      columnTitle: "To Do",
+      cardText: "Done thing",
+      noteName: "Ref",
+      noteUUID: "uuid-9",
+    });
+    expect(tagged).toContain('(https://www.amplenote.com/notes/uuid-9) <!-- {"uuid":"u-1"} -->');
+    expect(KanbanCore.parseBoard(tagged).columns[0].tasks[0].meta).toEqual({ uuid: "u-1" });
+  });
+
   it("setCardComplete toggles a card's checked state", () => {
     const next = KanbanCore.setCardComplete(SAMPLE, {
       columnTitle: "To Do",

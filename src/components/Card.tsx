@@ -64,21 +64,25 @@ function renderRichText(text: string, onNavigateToNote?: (uuid: string) => void)
   return parts.length > 0 ? parts : text;
 }
 
+/**
+ * The board shows a card's human-readable text only, so the replacement is sent
+ * without a checkbox: `KanbanCore.editCard` carries over the original
+ * completion state, `{start:…}` token and hidden Amplenote metadata.
+ */
 function buildMarkdownFromCard(task: CardType): string {
-  const checked = task.text.startsWith("[x]") || task.text.startsWith("[X]");
-  const textOnly = task.text.replace(/^\[[ xX]\]\s*/, "");
-  const head = `- [${checked ? "x" : " "}] ${textOnly}`;
+  const head = task.text.trim();
   if (task.body && task.body.trim().length > 0) {
     return `${head}\n${task.body}`;
   }
   return head;
 }
 
+const CLICK_SLOP_PX = 5;
+
 export const Card: React.FC<CardProps> = ({ task, index, columnTitle, onAction, onNavigateToNote }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(task.text);
-  const [dragArmed, setDragArmed] = useState(false);
-  const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerOrigin = useRef<{ x: number; y: number } | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -87,12 +91,6 @@ export const Card: React.FC<CardProps> = ({ task, index, columnTitle, onAction, 
       inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
     }
   }, [isEditing]);
-
-  useEffect(() => {
-    return () => {
-      if (armTimer.current) clearTimeout(armTimer.current);
-    };
-  }, []);
 
   const commit = () => {
     setIsEditing(false);
@@ -108,23 +106,18 @@ export const Card: React.FC<CardProps> = ({ task, index, columnTitle, onAction, 
     });
   };
 
-  const handlePointerDown = () => {
-    setDragArmed(false);
-    if (armTimer.current) clearTimeout(armTimer.current);
-    armTimer.current = setTimeout(() => setDragArmed(true), 150);
+  // A press only counts as a drag when the pointer actually moved, so holding
+  // a card in place still opens the editor on release.
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerOrigin.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handlePointerUp = () => {
-    if (armTimer.current) {
-      clearTimeout(armTimer.current);
-      armTimer.current = null;
-    }
-  };
-
-  const handleClick = () => {
-    if (dragArmed) {
-      setDragArmed(false);
-      return;
+  const handleClick = (e: React.MouseEvent) => {
+    const origin = pointerOrigin.current;
+    pointerOrigin.current = null;
+    if (origin) {
+      const moved = Math.abs(e.clientX - origin.x) + Math.abs(e.clientY - origin.y);
+      if (moved > CLICK_SLOP_PX) return;
     }
     setIsEditing(true);
   };
@@ -148,11 +141,9 @@ export const Card: React.FC<CardProps> = ({ task, index, columnTitle, onAction, 
             ...provided.draggableProps.style,
           }}
           onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
           onClick={(e) => {
             e.stopPropagation();
-            handleClick();
+            handleClick(e);
           }}
         >
           {isEditing ? (

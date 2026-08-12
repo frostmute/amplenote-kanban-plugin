@@ -49,18 +49,20 @@ export const Board: React.FC<BoardProps> = ({ initialBoard, onAction, onRefresh,
       const movedTask = sourceCol.tasks[source.index];
       if (!movedTask) return;
 
-      const { title: fromTitle } = stripLimit(sourceCol.title);
       const { title: toTitle, limit } = stripLimit(destCol.title);
       const isLastColumn = destCol === board.columns[board.columns.length - 1];
-      const isFirstColumn = sourceCol === board.columns[0];
       const isBacklog = sourceCol.title === "(No heading)";
       const destIsBacklog = destCol.title === "(No heading)";
-      const fromColumn = isBacklog ? "" : fromTitle;
-      const toColumn = destIsBacklog ? "" : toTitle;
+      // Mutators match on the exact heading text, `[n]` marker included.
+      const fromColumn = isBacklog ? "" : sourceCol.title;
+      const toColumn = destIsBacklog ? "" : destCol.title;
       const isMove = source.droppableId !== destination.droppableId;
       const finalIndex = isMove ? destination.index : destination.index + (destination.index > source.index ? 1 : 0);
 
-      if (isFirstColumn && !isLastColumn && fromColumn === toColumn) return;
+      if (isMove && limit !== null && destCol.tasks.length >= limit) {
+        window.alert(`"${toTitle}" is limited to ${limit} card${limit === 1 ? "" : "s"}.`);
+        return;
+      }
 
       onAction({
         op: "moveCard",
@@ -72,10 +74,6 @@ export const Board: React.FC<BoardProps> = ({ initialBoard, onAction, onRefresh,
           markComplete: isLastColumn,
         },
       });
-
-      if (limit !== null && destCol.tasks.length + 1 > limit) {
-        console.warn(`Destination column "${toTitle}" limit (${limit}) will be exceeded`);
-      }
     },
     [board, onAction],
   );

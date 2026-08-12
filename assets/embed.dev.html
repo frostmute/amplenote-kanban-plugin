@@ -36,6 +36,10 @@
           if (action === "getBoard" || action === "refresh") {
             return { markdown: _kanbanMock.getMarkdown() };
           }
+          if (action === "navigateToNote") {
+            console.info("navigateToNote", payload && payload.uuid);
+            return { ok: true };
+          }
           if (action === "applyAction") {
             const { op, args } = payload || {};
             const md = _kanbanMock.getMarkdown();

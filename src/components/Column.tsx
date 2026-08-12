@@ -37,7 +37,7 @@ export const Column: React.FC<ColumnProps> = ({
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskText, setNewTaskText] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editTitleText, setEditTitleText] = useState(column.title);
+  const [editTitleText, setEditTitleText] = useState(() => splitLimit(column.title).title);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -51,6 +51,13 @@ export const Column: React.FC<ColumnProps> = ({
   const isBacklog = column.title === NO_HEADING_TITLE;
   const isNearLimit = limit !== null && column.tasks.length >= limit;
   const isOverLimit = limit !== null && column.tasks.length > limit;
+  // Mutators match on the exact heading text, which keeps any `[n]` marker.
+  const columnKey = isBacklog ? "" : column.title;
+
+  const cancelAddTask = () => {
+    setIsAddingTask(false);
+    setNewTaskText("");
+  };
 
   const submitAddTask = () => {
     const text = newTaskText.trim();
@@ -59,27 +66,27 @@ export const Column: React.FC<ColumnProps> = ({
     if (!text) return;
     onAction({
       op: "addCard",
-      args: { columnTitle: titleOnly, text, startDate: null, linkNote: null },
+      args: { columnTitle: columnKey, text, startDate: null, linkNote: null },
     });
   };
 
   const submitTitle = () => {
     setIsEditingTitle(false);
     const newTitle = editTitleText.trim();
-    if (!newTitle || newTitle === column.title) {
-      setEditTitleText(column.title);
+    if (!newTitle || newTitle === titleOnly) {
+      setEditTitleText(titleOnly);
       return;
     }
-    const { limit: oldLimit } = splitLimit(column.title);
-    const finalTitle = oldLimit !== null ? `${newTitle} [${oldLimit}]` : newTitle;
-    onAction({ op: "renameColumn", args: { oldTitle: titleOnly, newTitle: finalTitle } });
+    const { limit: typedLimit } = splitLimit(newTitle);
+    const finalTitle = limit !== null && typedLimit === null ? `${newTitle} [${limit}]` : newTitle;
+    onAction({ op: "renameColumn", args: { oldTitle: column.title, newTitle: finalTitle } });
   };
 
   const handleDeleteColumn = () => {
     if (!window.confirm(`Delete column "${titleOnly}"? Its tasks will move to the top of the note (no heading).`)) {
       return;
     }
-    onAction({ op: "deleteColumn", args: { title: titleOnly } });
+    onAction({ op: "deleteColumn", args: { title: column.title } });
   };
 
   const handleAddColumn = () => {
@@ -126,7 +133,7 @@ export const Column: React.FC<ColumnProps> = ({
                 submitTitle();
               } else if (e.key === "Escape") {
                 setIsEditingTitle(false);
-                setEditTitleText(column.title);
+                setEditTitleText(titleOnly);
               }
             }}
             style={{
@@ -150,10 +157,12 @@ export const Column: React.FC<ColumnProps> = ({
             }}
             onClick={(e) => {
               e.stopPropagation();
-              if (!isBacklog) setIsEditingTitle(true);
+              if (isBacklog) return;
+              setEditTitleText(titleOnly);
+              setIsEditingTitle(true);
             }}
           >
-            {column.title}
+            {titleOnly}
             {limit !== null && (
               <span style={{ fontSize: 12, color: "#5e6c84", marginLeft: 8 }}>
                 {column.tasks.length}/{limit}
@@ -206,7 +215,7 @@ export const Column: React.FC<ColumnProps> = ({
                 key={task.id}
                 task={task}
                 index={index}
-                columnTitle={titleOnly}
+                columnTitle={columnKey}
                 onAction={onAction}
                 onNavigateToNote={onNavigateToNote}
               />
@@ -224,8 +233,7 @@ export const Column: React.FC<ColumnProps> = ({
                       e.preventDefault();
                       submitAddTask();
                     } else if (e.key === "Escape") {
-                      setIsAddingTask(false);
-                      setNewTaskText("");
+                      cancelAddTask();
                     }
                   }}
                   placeholder="Enter task text..."
@@ -270,10 +278,10 @@ export const Column: React.FC<ColumnProps> = ({
           </button>
         ) : (
           <button
-            onClick={() => {
-              setIsAddingTask(false);
-              setNewTaskText("");
-            }}
+            // Keep focus on the textarea so its blur handler doesn't submit
+            // the card before this cancel runs.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={cancelAddTask}
             style={{
               flexGrow: 1,
               padding: 8,

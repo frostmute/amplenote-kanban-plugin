@@ -21,7 +21,13 @@ const KANBAN_ALLOWED_ACTIONS = new Set([
   "getBoard",
   "applyAction",
   "refresh",
+  "navigateToNote",
 ]);
+
+/** SHA-256 of the `build.html.json` this note was built with. */
+const KANBAN_EMBED_SHA256 = "__KANBAN_EMBED_SHA256__";
+
+const KANBAN_NOTE_UUID_RE = /^[a-zA-Z0-9-]{6,64}$/;
 
 const KANBAN_ACTION_HANDLERS = {
   moveCard: (md, p) => KanbanCore.moveCardToIndex(md, {
@@ -95,6 +101,43 @@ async function _kanbanFetchAttachment(app, attachmentUUID) {
   return response.text();
 }
 
+async function _kanbanSha256Hex(text) {
+  const subtle = typeof crypto !== "undefined" && crypto.subtle;
+  if (!subtle || typeof TextEncoder === "undefined") return null;
+  const digest = await subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * The embed document is fetched back through a third-party CORS proxy, and it
+ * carries the CSP that constrains the board, so it is validated before being
+ * handed to the sidebar: byte-identical to what this note was built with, or
+ * (when SubtleCrypto is unavailable) at least structurally ours.
+ */
+async function _kanbanValidateEmbedHtml(html) {
+  const actual = await _kanbanSha256Hex(html);
+  if (actual) {
+    if (actual !== KANBAN_EMBED_SHA256) {
+      throw new Error("Embed attachment failed its integrity check; refusing to render it.");
+    }
+    return html;
+  }
+  const cspMatch = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)"/i);
+  const hasScriptSrc = /<script[^>]+src="(?!data:text\/javascript;base64,)/i.test(html);
+  if (
+    !html.startsWith("<!DOCTYPE html>") ||
+    !cspMatch ||
+    !/default-src 'none'/.test(cspMatch[1]) ||
+    /unsafe-eval/.test(cspMatch[1]) ||
+    hasScriptSrc
+  ) {
+    throw new Error("Embed attachment did not match the expected embed document; refusing to render it.");
+  }
+  return html;
+}
+
 function _kanbanEscapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;",
@@ -131,7 +174,8 @@ function _kanbanEscapeHtml(s) {
       const attachments = await app.getNoteAttachments(app.context.pluginUUID);
       const attachment = attachments.find((a) => a.name === "build.html.json");
       if (!attachment) throw new Error("build.html.json attachment not found on the plugin note.");
-      return await this._kanbanFetchAttachment(app, attachment.uuid);
+      const html = await this._kanbanFetchAttachment(app, attachment.uuid);
+      return await _kanbanValidateEmbedHtml(html);
     } catch (error) {
       return `<div style="font-family:sans-serif;color:#f88;padding:16px"><strong>Kanban renderEmbed error:</strong><br/>${_kanbanEscapeHtml(error && error.message ? error.message : String(error))}</div>`;
     }
@@ -153,6 +197,14 @@ function _kanbanEscapeHtml(s) {
     }
     if (action === "refresh") {
       return { markdown: await readMd() };
+    }
+    if (action === "navigateToNote") {
+      const target = payload.uuid;
+      if (typeof target !== "string" || !KANBAN_NOTE_UUID_RE.test(target)) {
+        return { error: "Invalid note uuid" };
+      }
+      await app.navigate(`https://www.amplenote.com/notes/${target}`);
+      return { ok: true };
     }
     if (action === "applyAction") {
       const op = payload && payload.op;
