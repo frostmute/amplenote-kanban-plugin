@@ -112,6 +112,13 @@ export const Card: React.FC<CardProps> = ({ task, index, columnTitle, onAction, 
     pointerOrigin.current = { x: e.clientX, y: e.clientY };
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    pointerOrigin.current = null;
+    if (!window.confirm(`Delete card "${task.text}"?`)) return;
+    onAction({ op: "deleteCard", args: { columnTitle, cardText: task.text } });
+  };
+
   const handleClick = (e: React.MouseEvent) => {
     const origin = pointerOrigin.current;
     pointerOrigin.current = null;
@@ -175,8 +182,26 @@ export const Card: React.FC<CardProps> = ({ task, index, columnTitle, onAction, 
             />
           ) : (
             <>
-              <div style={{ fontWeight: 500, color: "#172b4d", fontSize: 14, marginBottom: task.body ? 8 : 0 }}>
-                {renderRichText(task.text, onNavigateToNote)}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 4, marginBottom: task.body ? 8 : 0 }}>
+                <div style={{ flexGrow: 1, fontWeight: 500, color: "#172b4d", fontSize: 14 }}>
+                  {renderRichText(task.text, onNavigateToNote)}
+                </div>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={handleDelete}
+                  title="Delete card"
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#6b778c",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    lineHeight: 1,
+                    padding: 2,
+                  }}
+                >
+                  &times;
+                </button>
               </div>
               {task.body && (
                 <div

@@ -18,6 +18,9 @@
             "",
             "## Doing",
             "- [x] Ship the parser {start:2025-03-04} <!-- {\"uuid\":\"note-uuid-1234\"} -->",
+            "- [ ] Card with a sub-checklist",
+            "  - [ ] sub one",
+            "  - [x] sub two",
             "- [ ] Card with a footnote marker[^1]",
             "[^1]: This footnote definition must survive edits",
             "Trailing prose after the footnote.",
@@ -84,6 +87,7 @@
   <body style="margin:0">
     <div id="root" style="position:absolute;top:0;left:0;right:420px;bottom:0;overflow:hidden"></div>
     <pre id="md-panel" style="position:fixed;top:0;right:0;width:420px;height:100vh;margin:0;box-sizing:border-box;padding:8px 10px;overflow:auto;background:#1f2430;color:#d7dae0;font:12px/1.45 ui-monospace,Menlo,monospace;border-left:2px solid #0052cc;white-space:pre-wrap;z-index:50"></pre>
+    <button id="md-toggle" style="position:fixed;left:4px;bottom:4px;z-index:60;font:11px system-ui;padding:2px 6px">hide md</button>
     <script type="text/javascript">
       (function () {
         var panel = document.getElementById("md-panel");
@@ -92,6 +96,12 @@
         };
         render(_kanbanMock.getMarkdown());
         _kanbanMock.subscribe(render);
+        var btn = document.getElementById("md-toggle");
+        btn.addEventListener("click", function () {
+          var hidden = panel.style.display === "none";
+          panel.style.display = hidden ? "block" : "none";
+          btn.textContent = hidden ? "hide md" : "show md";
+        });
       })();
     </script>
     <script type="text/javascript" src="./index.js"></script>
