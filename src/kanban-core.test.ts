@@ -175,6 +175,21 @@ describe("KanbanCore.mutators", () => {
     expect(card.body).toContain("with a body");
   });
 
+  it("editCard keeps an indented sub-task in the body instead of promoting it", () => {
+    const md = "# Col\n- [ ] Parent card\n  - [ ] sub one\n  - [x] sub two\n";
+    const next = KanbanCore.editCard(md, {
+      columnTitle: "Col",
+      oldText: "Parent card",
+      newMarkdown: "Parent card renamed\n  - [ ] sub one\n  - [x] sub two",
+    });
+    const tasks = KanbanCore.parseBoard(next).columns[0].tasks;
+    expect(tasks.length).toBe(1);
+    expect(tasks[0].text).toBe("Parent card renamed");
+    expect(tasks[0].checked).toBe(false);
+    expect(tasks[0].body).toContain("- [ ] sub one");
+    expect(tasks[0].body).toContain("- [x] sub two");
+  });
+
   it("editCard leaves footnote definitions that follow the card alone", () => {
     const md = [
       "# Col",

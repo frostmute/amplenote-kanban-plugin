@@ -6,7 +6,7 @@
  * which keeps non-board content (paragraphs, footnote defs, frontmatter) intact
  * wherever possible.
  */
-import { HEADING_RE, META_COMMENT_RE, START_TOKEN_RE_G, TASK_RE } from "./constants";
+import { HEADING_RE, META_COMMENT_RE, START_TOKEN_RE_G } from "./constants";
 import {
   composeTaskLine,
   findColumn,
@@ -87,8 +87,11 @@ export function editCard(markdown, { columnTitle, oldText, newMarkdown }) {
   };
 
   const newLines = newMarkdown.split("\n");
-  const firstTaskIdx = newLines.findIndex((l) => TASK_RE.test(l));
-  const headIdx = firstTaskIdx === -1 ? 0 : firstTaskIdx;
+  // The head is the first non-blank line. A checkbox the user typed there still
+  // wins (composeTaskLine reads it), but an indented sub-task further down the
+  // body must never be promoted to the card line.
+  let headIdx = newLines.findIndex((l) => l.trim() !== "");
+  if (headIdx === -1) headIdx = 0;
   card.line = composeTaskLine(newLines[headIdx] || "", preserved);
   card.bodyLines = newLines.slice(headIdx + 1);
   return serialize(blocks);

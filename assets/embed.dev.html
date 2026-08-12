@@ -9,15 +9,22 @@
         // State lives in memory; reload resets the board.
         const _kanbanMock = (() => {
           const initial = [
-            "# To Do",
+            "- [ ] Backlog alpha",
+            "- [ ] Backlog beta",
+            "",
+            "## To Do [2]",
             "- [ ] Pick a starter column name",
             "- [ ] Drag this card between columns",
             "",
-            "# Doing",
-            "- [ ] Edit me by clicking the card",
+            "## Doing",
+            "- [x] Ship the parser {start:2025-03-04} <!-- {\"uuid\":\"note-uuid-1234\"} -->",
+            "- [ ] Card with a footnote marker[^1]",
+            "[^1]: This footnote definition must survive edits",
+            "Trailing prose after the footnote.",
             "",
-            "# Done",
+            "## Done",
             "- [x] Initialize the kanban project",
+            "- [ ] Open [Design doc](https://www.amplenote.com/notes/abcd-1234-efgh) for review",
           ].join("\n");
           let markdown = initial;
           const listeners = new Set();
@@ -74,8 +81,19 @@
         });
       </script>
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="margin:0">
+    <div id="root" style="position:absolute;top:0;left:0;right:420px;bottom:0;overflow:hidden"></div>
+    <pre id="md-panel" style="position:fixed;top:0;right:0;width:420px;height:100vh;margin:0;box-sizing:border-box;padding:8px 10px;overflow:auto;background:#1f2430;color:#d7dae0;font:12px/1.45 ui-monospace,Menlo,monospace;border-left:2px solid #0052cc;white-space:pre-wrap;z-index:50"></pre>
+    <script type="text/javascript">
+      (function () {
+        var panel = document.getElementById("md-panel");
+        var render = function (md) {
+          panel.textContent = "==== NOTE MARKDOWN (live) ====\n" + md + "\n==== END ====";
+        };
+        render(_kanbanMock.getMarkdown());
+        _kanbanMock.subscribe(render);
+      })();
+    </script>
     <script type="text/javascript" src="./index.js"></script>
   </body>
 </html>
