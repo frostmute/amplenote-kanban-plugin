@@ -3,7 +3,7 @@
  * Structural helpers: the line-preserving note model every mutator works on,
  * plus small text utilities.
  */
-import { HEADING_RE, META_COMMENT_RE, START_TOKEN_RE, START_TOKEN_RE_G, TASK_RE } from "./constants";
+import { FOOTNOTE_DEF_RE, HEADING_RE, META_COMMENT_RE, START_TOKEN_RE, START_TOKEN_RE_G, TASK_RE } from "./constants";
 
 /**
  * Build a structured, serializable model of the note that preserves every
@@ -31,6 +31,19 @@ export function structure(markdown) {
     if (tm && tm[1].length === 0) {
       card = { type: "task", line, bodyLines: [], blanks: 0 };
       col.cards.push(card);
+      continue;
+    }
+    // A footnote definition ends the current card, matching `parseBoard`: the
+    // parser hides these lines from the card body, so they must not live in
+    // `bodyLines` either or an edit would overwrite them out of the note.
+    if (FOOTNOTE_DEF_RE.test(line)) {
+      if (card) {
+        while (card.bodyLines.length && card.bodyLines[card.bodyLines.length - 1].trim() === "") {
+          col.trailing.push(card.bodyLines.pop());
+        }
+        card = null;
+      }
+      col.trailing.push(line);
       continue;
     }
     if (card) {

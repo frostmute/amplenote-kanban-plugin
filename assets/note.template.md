@@ -103,7 +103,9 @@ async function _kanbanFetchAttachment(app, attachmentUUID) {
 
 async function _kanbanSha256Hex(text) {
   const subtle = typeof crypto !== "undefined" && crypto.subtle;
-  if (!subtle || typeof TextEncoder === "undefined") return null;
+  if (!subtle || typeof TextEncoder === "undefined") {
+    throw new Error("SubtleCrypto is unavailable, so the embed cannot be verified.");
+  }
   const digest = await subtle.digest("SHA-256", new TextEncoder().encode(text));
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -112,28 +114,14 @@ async function _kanbanSha256Hex(text) {
 
 /**
  * The embed document is fetched back through a third-party CORS proxy, and it
- * carries the CSP that constrains the board, so it is validated before being
- * handed to the sidebar: byte-identical to what this note was built with, or
- * (when SubtleCrypto is unavailable) at least structurally ours.
+ * carries the CSP that constrains the board, so nothing but the byte-identical
+ * document this note was built with is handed to the sidebar. There is no
+ * weaker fallback: without a usable digest the embed does not render.
  */
 async function _kanbanValidateEmbedHtml(html) {
   const actual = await _kanbanSha256Hex(html);
-  if (actual) {
-    if (actual !== KANBAN_EMBED_SHA256) {
-      throw new Error("Embed attachment failed its integrity check; refusing to render it.");
-    }
-    return html;
-  }
-  const cspMatch = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)"/i);
-  const hasScriptSrc = /<script[^>]+src="(?!data:text\/javascript;base64,)/i.test(html);
-  if (
-    !html.startsWith("<!DOCTYPE html>") ||
-    !cspMatch ||
-    !/default-src 'none'/.test(cspMatch[1]) ||
-    /unsafe-eval/.test(cspMatch[1]) ||
-    hasScriptSrc
-  ) {
-    throw new Error("Embed attachment did not match the expected embed document; refusing to render it.");
+  if (actual !== KANBAN_EMBED_SHA256) {
+    throw new Error("Embed attachment failed its integrity check; refusing to render it.");
   }
   return html;
 }

@@ -87,30 +87,59 @@ export default function Embed() {
     }
   }, []);
 
-  if (error) {
-    return (
-      <div style={{ padding: 16, fontFamily: "system-ui, sans-serif" }}>
-        <p style={{ color: "#bf2600" }}>Kanban error: {error}</p>
-        <button onClick={refresh}>Retry</button>
-      </div>
-    );
-  }
-
+  // Only a failed *load* replaces the board; a rejected action shows a banner
+  // so an unapplied edit never costs the user their board view.
   if (!board) {
     return (
       <div style={{ padding: 16, fontFamily: "system-ui, sans-serif" }}>
-        <p>Loading board data...</p>
+        {error ? (
+          <>
+            <p style={{ color: "#bf2600" }}>Kanban error: {error}</p>
+            <button onClick={refresh}>Retry</button>
+          </>
+        ) : (
+          <p>Loading board data...</p>
+        )}
       </div>
     );
   }
 
   return (
-    <BoardComponent
-      initialBoard={board}
-      footnotes={footnotes}
-      onAction={applyAction}
-      onRefresh={refresh}
-      onNavigateToNote={handleNavigateToNote}
-    />
+    <>
+      {error && (
+        <div
+          role="alert"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 16px",
+            backgroundColor: "#ffebe6",
+            borderBottom: "1px solid #ffbdad",
+            color: "#bf2600",
+            fontFamily: "system-ui, sans-serif",
+            fontSize: 13,
+          }}
+        >
+          <span style={{ flexGrow: 1 }}>{error}</span>
+          <button onClick={refresh}>Retry</button>
+          <button onClick={() => setError(null)} aria-label="Dismiss">
+            &times;
+          </button>
+        </div>
+      )}
+      <BoardComponent
+        initialBoard={board}
+        footnotes={footnotes}
+        onAction={applyAction}
+        onRefresh={refresh}
+        onNavigateToNote={handleNavigateToNote}
+      />
+    </>
   );
 }

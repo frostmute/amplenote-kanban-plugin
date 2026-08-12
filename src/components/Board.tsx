@@ -11,6 +11,8 @@ interface BoardProps {
   onNavigateToNote?: (uuid: string) => void;
 }
 
+const BACKLOG_TITLE = "(No heading)";
+
 function stripLimit(title: string): { title: string; limit: number | null } {
   const m = title.match(/^(.*?)\s*\[(\d+)\]\s*$/);
   if (!m) return { title, limit: null };
@@ -39,7 +41,12 @@ export const Board: React.FC<BoardProps> = ({ initialBoard, onAction, onRefresh,
         const titles = board.columns.map((c) => c.title);
         const [movedTitle] = titles.splice(source.index, 1);
         titles.splice(destination.index, 0, movedTitle);
-        onAction({ op: "reorderColumns", args: { order: titles } });
+        // The backlog is the note's preamble, not a heading: `reorderColumns`
+        // always emits it first and would reject an order that names it.
+        onAction({
+          op: "reorderColumns",
+          args: { order: titles.filter((t) => t !== BACKLOG_TITLE) },
+        });
         return;
       }
 
@@ -51,8 +58,8 @@ export const Board: React.FC<BoardProps> = ({ initialBoard, onAction, onRefresh,
 
       const { title: toTitle, limit } = stripLimit(destCol.title);
       const isLastColumn = destCol === board.columns[board.columns.length - 1];
-      const isBacklog = sourceCol.title === "(No heading)";
-      const destIsBacklog = destCol.title === "(No heading)";
+      const isBacklog = sourceCol.title === BACKLOG_TITLE;
+      const destIsBacklog = destCol.title === BACKLOG_TITLE;
       // Mutators match on the exact heading text, `[n]` marker included.
       const fromColumn = isBacklog ? "" : sourceCol.title;
       const toColumn = destIsBacklog ? "" : destCol.title;
@@ -129,7 +136,12 @@ export const Board: React.FC<BoardProps> = ({ initialBoard, onAction, onRefresh,
               }}
             >
               {board.columns.map((column, index) => (
-                <Draggable key={column.id} draggableId={column.id} index={index}>
+                <Draggable
+                  key={column.id}
+                  draggableId={column.id}
+                  index={index}
+                  isDragDisabled={column.title === BACKLOG_TITLE}
+                >
                   {(provided) => (
                     <div
                       ref={provided.innerRef}

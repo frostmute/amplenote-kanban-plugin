@@ -15,4 +15,7 @@ export const META_COMMENT_RE = /\s*<!--\s*(\{.*\})\s*-->\s*$/;
 export const START_TOKEN_RE = /\s*\{start:([^}]*)\}/;
 export const START_TOKEN_RE_G = /\s*\{start:[^}]*\}/g;
 
+/** `[^id]: …` definition lines belong to the note, never to a card. */
+export const FOOTNOTE_DEF_RE = /^\s*\[\^[^\]]+\]:/;
+
 export const NO_HEADING_TITLE = "(No heading)";

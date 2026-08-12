@@ -175,6 +175,26 @@ describe("KanbanCore.mutators", () => {
     expect(card.body).toContain("with a body");
   });
 
+  it("editCard leaves footnote definitions that follow the card alone", () => {
+    const md = [
+      "# Col",
+      "- [ ] See [^1]",
+      "",
+      "[^1]: [Home](https://home.test)",
+      "",
+      "After the blank line.",
+      "",
+    ].join("\n");
+    const next = KanbanCore.editCard(md, {
+      columnTitle: "Col",
+      oldText: "See [^1]",
+      newMarkdown: "See [^1] now",
+    });
+    expect(next).toContain("[^1]: [Home](https://home.test)");
+    expect(next).toContain("After the blank line.");
+    expect(KanbanCore.parseBoard(next).columns[0].tasks[0].text).toBe("See [^1] now");
+  });
+
   it("editCard honours a checkbox the user typed themselves", () => {
     const next = KanbanCore.editCard(SAMPLE, {
       columnTitle: "To Do",

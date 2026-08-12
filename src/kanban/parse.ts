@@ -2,7 +2,7 @@
 /**
  * Markdown -> board model parsing and card content extraction.
  */
-import { HEADING_RE, META_COMMENT_RE, NO_HEADING_TITLE, SCHEMA_VERSION, START_TOKEN_RE, START_TOKEN_RE_G, TASK_RE } from "./constants";
+import { FOOTNOTE_DEF_RE, HEADING_RE, META_COMMENT_RE, NO_HEADING_TITLE, SCHEMA_VERSION, START_TOKEN_RE, START_TOKEN_RE_G, TASK_RE } from "./constants";
 import { slug, trimTrailingBlank } from "./helpers";
 
 /**
@@ -53,7 +53,7 @@ export function parseBoard(markdown) {
     // if we are still "inside" it (no blank-line gap that ends the card).
     // Footnote definition lines (`[^id]: ...`) and their indented body
     // belong to the document, not to any card — skip them entirely.
-    if (/^\s*\[\^[^\]]+\]:/.test(line)) {
+    if (FOOTNOTE_DEF_RE.test(line)) {
       lastCard = null;
       continue;
     }
