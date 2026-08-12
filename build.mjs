@@ -1,10 +1,60 @@
-import serve, { error, log } from "create-serve";
+import serve, { error } from "create-serve";
 import esbuild from "esbuild";
 import JSZip from "jszip";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
 const IS_DEV = process.argv.includes("--dev");
+const PAYLOAD_TOKEN = "__KANBAN_CORE_PLACEHOLDER__";
+const EMBED_HASH_TOKEN = "__KANBAN_EMBED_SHA256__";
+const CSS_TOKEN = "__BASE64CSSCONTENT__";
+
+/**
+ * `kanban-core` is split into fragments so no file exceeds the repository's
+ * line limit. They are concatenated in dependency order (shared constants
+ * first, the `KanbanCore` facade last) and inlined into the plugin note so the
+ * embed and the note run identical mutators.
+ */
+const CORE_FRAGMENTS = [
+  path.join("src", "kanban", "constants.ts"),
+  path.join("src", "kanban", "helpers.ts"),
+  path.join("src", "kanban", "parse.ts"),
+  path.join("src", "kanban", "mutate.ts"),
+  path.join("src", "kanban-core.ts"),
+];
+
+function inlineKanbanCore() {
+  const body = CORE_FRAGMENTS.map((file) => {
+    const stripped = fs
+      .readFileSync(file, "utf8")
+      .replace(/^import\s[^;]*;[ \t]*$/gm, "")
+      .replace(/^export const KanbanCore/m, "const KanbanCore")
+      .replace(/^export\s+/gm, "");
+    if (/^\s*(import|export)\s/m.test(stripped)) {
+      throw new Error(`Unstripped import/export in inlined fragment: ${file}`);
+    }
+    return stripped;
+  }).join("\n");
+  return `const KanbanCore = (function() {\n${body}\nreturn KanbanCore;\n})();`;
+}
+
+function escaper(replacements) {
+  return Object.keys(replacements)
+    .sort((a, b) => b.length - a.length)
+    .map((k) => [k, replacements[k]]);
+}
+
+function safeReplace(haystack, replacements) {
+  let result = haystack;
+  for (const [token, value] of escaper(replacements)) {
+    if (!result.includes(token)) {
+      throw new Error(`Template is missing expected token: ${token}`);
+    }
+    result = result.split(token).join(value);
+  }
+  return result;
+}
 
 const packageNotePlugin = {
   name: "package-note-plugin",
@@ -14,43 +64,60 @@ const packageNotePlugin = {
 
     build.onEnd(async ({ errors, outputFiles }) => {
       if (errors.length > 0) {
-        console.error(errors);
-      } else {
-        let htmlContent = fs.readFileSync(path.join("assets", "embed.html"), "utf8");
-
-        for (const file of outputFiles) {
-          const { path: outputPath } = file;
-          if (outputPath.match(/\.js$/)) {
-            // Replace Function constructor calls from dependencies if they exist
-            let safeJs = file.text.replace(/new Function\(/g, 'new Error(');
-            safeJs = safeJs.replace(/eval\(/g, 'console.error(');
-            const base64JavascriptContent = Buffer.from(safeJs).toString("base64");
-            htmlContent = htmlContent.replace("__BASE64JAVASCRIPTCONTENT__", base64JavascriptContent);
-          } else if (outputPath.match(/\.css$/)) {
-            const base64CssContent = Buffer.from(file.text).toString("base64");
-            htmlContent = htmlContent.replace("__BASE64CSSCONTENT__", base64CssContent);
-          }
-        }
-
-        const markdownContent = fs.readFileSync(path.join("assets", "note.md"), "utf8");
-
-        const zip = new JSZip();
-        zip.file("build.html.json", htmlContent);
-        zip.file("note.md", markdownContent);
-
-        const zipContent = await zip.generateAsync({ type: "nodebuffer" });
-        const outputDirectory = path.dirname(outputFiles[0].path);
-
-        if (!fs.existsSync(outputDirectory)) {
-          fs.mkdirSync(outputDirectory);
-        }
-
-        const zipPath = path.join(outputDirectory, "plugin.zip");
-        fs.writeFileSync(zipPath, zipContent);
-
-        const htmlPath = path.join(outputDirectory, "build.html.json");
-        fs.writeFileSync(htmlPath, htmlContent);
+        console.error("Build failed:", errors);
+        process.exitCode = 1;
+        return;
       }
+      if (!outputFiles || outputFiles.length === 0) {
+        console.error("Build produced no output files");
+        process.exitCode = 1;
+        return;
+      }
+
+      let htmlContent = fs.readFileSync(path.join("assets", "embed.html"), "utf8");
+      let cssB64 = "";
+      let jsB64 = "";
+
+      for (const file of outputFiles) {
+        const { path: outputPath, text } = file;
+        if (outputPath.match(/\.css$/)) {
+          cssB64 = Buffer.from(text).toString("base64");
+        } else if (outputPath.match(/\.js$/)) {
+          let safeJs = text.replace(/new Function\(/g, "new Error(");
+          safeJs = safeJs.replace(/\beval\(/g, "console.error(");
+          jsB64 = Buffer.from(safeJs).toString("base64");
+        }
+      }
+
+      if (!jsB64) throw new Error("Build produced no JS bundle");
+      if (!cssB64) cssB64 = "";
+
+      htmlContent = htmlContent.replace("__BASE64JAVASCRIPTCONTENT__", jsB64);
+      htmlContent = htmlContent.replace("__BASE64CSSCONTENT__", cssB64);
+
+      const coreInlined = inlineKanbanCore();
+      const embedHash = crypto.createHash("sha256").update(htmlContent, "utf8").digest("hex");
+
+      const noteTemplate = fs.readFileSync(path.join("assets", "note.template.md"), "utf8");
+      const noteContent = safeReplace(noteTemplate, {
+        [PAYLOAD_TOKEN]: coreInlined,
+        [EMBED_HASH_TOKEN]: embedHash,
+      });
+
+      const zip = new JSZip();
+      zip.file("build.html.json", htmlContent);
+      zip.file("note.md", noteContent);
+
+      const zipContent = await zip.generateAsync({ type: "nodebuffer" });
+      const outputDirectory = path.dirname(outputFiles[0].path);
+
+      if (!fs.existsSync(outputDirectory)) {
+        fs.mkdirSync(outputDirectory, { recursive: true });
+      }
+
+      fs.writeFileSync(path.join(outputDirectory, "plugin.zip"), zipContent);
+      fs.writeFileSync(path.join(outputDirectory, "build.html.json"), htmlContent);
+      fs.writeFileSync(path.join(outputDirectory, "note.md"), noteContent);
     });
   }
 };
@@ -64,29 +131,24 @@ const serveBuildPlugin = {
 
     build.onEnd(({ errors, outputFiles }) => {
       if (errors.length > 0) {
-        error(`Build failed: ${ JSON.stringify(errors) }`);
-      } else {
-        outputFiles.forEach(file => {
-          const { path: outputPath } = file;
-
-          if (outputPath.match(/\.css$/)) {
-            const cssPath = path.join(path.dirname(outputPath), "index.css");
-            fs.writeFileSync(cssPath, file.text);
-          } else if (outputPath.match(/\.js$/)) {
-            const javascriptPath = path.join(path.dirname(outputPath), "index.js");
-            fs.writeFileSync(javascriptPath, file.text);
-
-            const htmlContent = fs.readFileSync(path.join("assets", "embed.dev.html"), "utf8");
-            const htmlPath = path.join(path.dirname(outputPath), "index.html");
-            fs.writeFileSync(htmlPath, htmlContent);
-          } else if (outputPath.match(/\.js.map$/)) {
-            const sourcemapPath = path.join(path.dirname(outputPath), "index.js.map");
-            fs.writeFileSync(sourcemapPath, file.text);
-          }
-        });
-
-        serve.update();
+        error(`Build failed: ${JSON.stringify(errors)}`);
+        process.exitCode = 1;
+        return;
       }
+      if (!outputFiles || outputFiles.length === 0) return;
+      outputFiles.forEach((file) => {
+        const { path: outputPath, text } = file;
+        if (outputPath.match(/\.css$/)) {
+          fs.writeFileSync(path.join(path.dirname(outputPath), "index.css"), text);
+        } else if (outputPath.match(/\.js$/)) {
+          fs.writeFileSync(path.join(path.dirname(outputPath), "index.js"), text);
+          const htmlContent = fs.readFileSync(path.join("assets", "embed.dev.html"), "utf8");
+          fs.writeFileSync(path.join(path.dirname(outputPath), "index.html"), htmlContent);
+        } else if (outputPath.match(/\.js\.map$/)) {
+          fs.writeFileSync(path.join(path.dirname(outputPath), "index.js.map"), text);
+        }
+      });
+      serve.update();
     });
   }
 };
@@ -95,14 +157,16 @@ const buildOptions = {
   bundle: true,
   define: {
     "process.env.NODE_ENV": IS_DEV ? '"development"' : '"production"',
+    __KANBAN_DEV__: IS_DEV ? "true" : "false",
   },
   entryPoints: ["src/index.tsx"],
   minify: !IS_DEV,
   format: "iife",
-  outdir: "build",
+  outdir: "dist",
   sourceRoot: "src",
-  plugins: [ IS_DEV ? serveBuildPlugin : packageNotePlugin ],
-  target: [ "es2022" ],
+  plugins: [IS_DEV ? serveBuildPlugin : packageNotePlugin],
+  target: ["es2022"],
+  logLevel: "info",
 };
 
 if (IS_DEV) {
@@ -111,7 +175,7 @@ if (IS_DEV) {
 
   serve.start({
     port: 5000,
-    root: "./build",
+    root: "./dist",
     live: true,
   });
 } else {

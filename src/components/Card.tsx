@@ -1,77 +1,88 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Draggable } from '@hello-pangea/dnd';
-import { Card as CardType } from '../types';
+import React, { useEffect, useRef, useState } from "react";
+import { Draggable } from "@hello-pangea/dnd";
+import type { BoardAction, Card as CardType } from "../types";
 
 interface CardProps {
   task: CardType;
   index: number;
-  onEdit?: (taskId: string, newText: string) => void;
+  columnTitle: string;
+  onAction: (action: BoardAction) => void;
   onNavigateToNote?: (uuid: string) => void;
 }
 
-const renderRichText = (text: string, onNavigateToNote?: (uuid: string) => void) => {
-    if (!text) return text;
-    
-    // Simplistic regex for markdown links [text](url) and Amplenote notes [text](https://www.amplenote.com/notes/uuid)
-    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    
-    const parts = [];
-    let lastIndex = 0;
-    let match;
+const LINK_RE = /\[([^\]]+)\]\(([^)]+)\)/g;
+const AMPLENOTE_RE = /^https:\/\/www\.amplenote\.com\/notes\/([a-zA-Z0-9-]+)$/;
 
-    while ((match = linkRegex.exec(text)) !== null) {
-        if (match.index > lastIndex) {
-            parts.push(text.substring(lastIndex, match.index));
-        }
-        
-        const linkText = match[1];
-        const linkUrl = match[2];
-        
-        const amplenoteMatch = linkUrl.match(/^https:\/\/www\.amplenote\.com\/notes\/([a-zA-Z0-9-]+)$/);
-        
-        if (amplenoteMatch && onNavigateToNote) {
-            const uuid = amplenoteMatch[1];
-            parts.push(
-                <a 
-                    key={match.index} 
-                    href={linkUrl} 
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onNavigateToNote(uuid);
-                    }}
-                    style={{ color: '#0052cc', cursor: 'pointer', textDecoration: 'none' }}
-                >
-                    {linkText}
-                </a>
-            );
-        } else {
-            parts.push(
-                <a 
-                    key={match.index} 
-                    href={linkUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    style={{ color: '#0052cc', textDecoration: 'none' }}
-                >
-                    {linkText}
-                </a>
-            );
-        }
-        lastIndex = match.index + match[0].length;
+function renderRichText(text: string, onNavigateToNote?: (uuid: string) => void): React.ReactNode {
+  if (!text) return text;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+  LINK_RE.lastIndex = 0;
+  while ((match = LINK_RE.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
     }
-    
-    if (lastIndex < text.length) {
-        parts.push(text.substring(lastIndex));
+    const [, linkText, linkUrl] = match;
+    const amp = linkUrl.match(AMPLENOTE_RE);
+    if (amp && onNavigateToNote) {
+      const uuid = amp[1];
+      parts.push(
+        <a
+          key={`a-${key++}`}
+          href={linkUrl}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onNavigateToNote(uuid);
+          }}
+          style={{ color: "#0052cc", cursor: "pointer", textDecoration: "none" }}
+        >
+          {linkText}
+        </a>,
+      );
+    } else {
+      parts.push(
+        <a
+          key={`a-${key++}`}
+          href={linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          style={{ color: "#0052cc", textDecoration: "none" }}
+        >
+          {linkText}
+        </a>,
+      );
     }
-    
-    return parts.length > 0 ? parts : text;
-};
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+}
 
-export const Card: React.FC<CardProps> = ({ task, index, onEdit, onNavigateToNote }) => {
+/**
+ * The board shows a card's human-readable text only, so the replacement is sent
+ * without a checkbox: `KanbanCore.editCard` carries over the original
+ * completion state, `{start:…}` token and hidden Amplenote metadata.
+ */
+function buildMarkdownFromCard(task: CardType): string {
+  const head = task.text.trim();
+  if (task.body && task.body.trim().length > 0) {
+    return `${head}\n${task.body}`;
+  }
+  return head;
+}
+
+const CLICK_SLOP_PX = 5;
+
+export const Card: React.FC<CardProps> = ({ task, index, columnTitle, onAction, onNavigateToNote }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(task.text);
+  const pointerOrigin = useRef<{ x: number; y: number } | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -81,22 +92,41 @@ export const Card: React.FC<CardProps> = ({ task, index, onEdit, onNavigateToNot
     }
   }, [isEditing]);
 
-  const handleSave = () => {
+  const commit = () => {
     setIsEditing(false);
-    if (editText.trim() !== task.text && onEdit) {
-      onEdit(task.id, editText.trim());
+    const next = editText.trim();
+    if (!next || next === task.text) {
+      setEditText(task.text);
+      return;
     }
+    const newMarkdown = buildMarkdownFromCard({ ...task, text: next });
+    onAction({
+      op: "editCard",
+      args: { columnTitle, oldText: task.text, newMarkdown },
+    });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSave();
+  // A press only counts as a drag when the pointer actually moved, so holding
+  // a card in place still opens the editor on release.
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerOrigin.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    pointerOrigin.current = null;
+    if (!window.confirm(`Delete card "${task.text}"?`)) return;
+    onAction({ op: "deleteCard", args: { columnTitle, cardText: task.text } });
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    const origin = pointerOrigin.current;
+    pointerOrigin.current = null;
+    if (origin) {
+      const moved = Math.abs(e.clientX - origin.x) + Math.abs(e.clientY - origin.y);
+      if (moved > CLICK_SLOP_PX) return;
     }
-    if (e.key === 'Escape') {
-      setIsEditing(false);
-      setEditText(task.text);
-    }
+    setIsEditing(true);
   };
 
   return (
@@ -107,21 +137,20 @@ export const Card: React.FC<CardProps> = ({ task, index, onEdit, onNavigateToNot
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           style={{
-            userSelect: 'none',
-            padding: '12px',
-            margin: '0 0 8px 0',
-            backgroundColor: '#ffffff',
-            borderRadius: '4px',
-            boxShadow: snapshot.isDragging 
-              ? '0 5px 10px rgba(0,0,0,0.15)' 
-              : '0 1px 2px rgba(9,30,66,0.25)',
-            ...provided.draggableProps.style
+            userSelect: "none",
+            padding: 12,
+            margin: "0 0 8px 0",
+            backgroundColor: "#ffffff",
+            borderRadius: 4,
+            boxShadow: snapshot.isDragging
+              ? "0 5px 10px rgba(0,0,0,0.15)"
+              : "0 1px 2px rgba(9,30,66,0.25)",
+            ...provided.draggableProps.style,
           }}
+          onPointerDown={handlePointerDown}
           onClick={(e) => {
-            // Prevent entering edit mode when dragging
-            if (!snapshot.isDragging) {
-                setIsEditing(true);
-            }
+            e.stopPropagation();
+            handleClick(e);
           }}
         >
           {isEditing ? (
@@ -129,51 +158,110 @@ export const Card: React.FC<CardProps> = ({ task, index, onEdit, onNavigateToNot
               ref={inputRef}
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
-              onBlur={handleSave}
-              onKeyDown={handleKeyDown}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  commit();
+                } else if (e.key === "Escape") {
+                  setIsEditing(false);
+                  setEditText(task.text);
+                }
+              }}
               style={{
-                width: '100%',
-                minHeight: '40px',
-                border: '1px solid #0052cc',
-                borderRadius: '3px',
-                padding: '4px',
-                fontFamily: 'inherit',
-                fontSize: '14px',
-                resize: 'none',
-                boxSizing: 'border-box'
+                width: "100%",
+                minHeight: 40,
+                border: "1px solid #0052cc",
+                borderRadius: 3,
+                padding: 4,
+                fontFamily: "inherit",
+                fontSize: 14,
+                resize: "none",
+                boxSizing: "border-box",
               }}
             />
           ) : (
             <>
-                <div style={{ fontWeight: 500, color: '#172b4d', fontSize: '14px', marginBottom: task.body ? '8px' : '0' }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 4, marginBottom: task.body ? 8 : 0 }}>
+                <div style={{ flexGrow: 1, fontWeight: 500, color: "#172b4d", fontSize: 14 }}>
                   {renderRichText(task.text, onNavigateToNote)}
                 </div>
-                {task.body && (
-                  <div style={{ fontSize: '12px', color: '#5e6c84', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>
-                    {renderRichText(task.body, onNavigateToNote)}
-                  </div>
-                )}
-                {task.firstImage && (
-                    <img 
-                        src={task.firstImage.url} 
-                        alt={task.firstImage.alt || 'embedded image'} 
-                        style={{ maxWidth: '100%', marginTop: '8px', borderRadius: '4px' }}
-                    />
-                )}
-                {(task.labels && task.labels.length > 0 || task.startDate) && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
-                        {task.startDate && (
-                            <span style={{ backgroundColor: '#ebecf0', color: '#5e6c84', padding: '2px 4px', borderRadius: '3px', fontSize: '12px', display: 'flex', alignItems: 'center' }}>
-                                📅 {task.startDate}
-                            </span>
-                        )}
-                        {task.labels && task.labels.map(label => (
-                            <span key={label} style={{ backgroundColor: '#e3fcef', color: '#006644', padding: '2px 4px', borderRadius: '3px', fontSize: '12px' }}>
-                                #{label}
-                            </span>
-                        ))}
-                    </div>
-                )}
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={handleDelete}
+                  title="Delete card"
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#6b778c",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    lineHeight: 1,
+                    padding: 2,
+                  }}
+                >
+                  &times;
+                </button>
+              </div>
+              {task.body && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#5e6c84",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {renderRichText(task.body, onNavigateToNote)}
+                </div>
+              )}
+              {task.firstImage && (
+                <img
+                  src={task.firstImage.url}
+                  alt={task.firstImage.alt || "embedded image"}
+                  style={{ maxWidth: "100%", marginTop: 8, borderRadius: 4 }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              )}
+              {((task.labels && task.labels.length > 0) || task.startDate) && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+                  {task.startDate && (
+                    <span
+                      style={{
+                        backgroundColor: "#ebecf0",
+                        color: "#5e6c84",
+                        padding: "2px 4px",
+                        borderRadius: 3,
+                        fontSize: 12,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      📅 {task.startDate}
+                    </span>
+                  )}
+                  {task.labels &&
+                    task.labels.map((label) => (
+                      <span
+                        key={label}
+                        style={{
+                          backgroundColor: "#e3fcef",
+                          color: "#006644",
+                          padding: "2px 4px",
+                          borderRadius: 3,
+                          fontSize: 12,
+                        }}
+                      >
+                        #{label}
+                      </span>
+                    ))}
+                </div>
+              )}
             </>
           )}
         </div>
