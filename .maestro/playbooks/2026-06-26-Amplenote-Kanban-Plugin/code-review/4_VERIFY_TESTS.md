@@ -4,9 +4,9 @@
 
 - **Playbook**: Code Review
 - **Agent**: Amplenote Kanban
-- **Project**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin
+- **Project**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin
 - **Date**: 2026-06-27
-- **Working Folder**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
+- **Working Folder**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
 
 ## Purpose
 
@@ -14,13 +14,13 @@ Evaluate test coverage for the changed code and assess test quality.
 
 ## Prerequisites
 
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` exists from Document 1
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` exists from Document 1
 
 ## Tasks
 
 ### Task 1: Load Context
 
-- [x] **Read scope**: Load `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` to identify changed source files.
+- [x] **Read scope**: Load `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` to identify changed source files.
 
 ### Task 2: Identify Test Files
 
@@ -85,7 +85,7 @@ Evaluate test coverage for the changed code and assess test quality.
 
 ### Task 6: Document Test Gaps
 
-- [x] **Create TEST_GAPS.md**: Write findings to `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/TEST_GAPS.md`:
+- [x] **Create TEST_GAPS.md**: Write findings to `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/TEST_GAPS.md`:
 
 ```markdown
 # Test Coverage Review

@@ -21,7 +21,7 @@ Unknown.
 > amplenote-embed-starter@1.0.0 test
 > vitest run
 
- RUN  v4.1.9 /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin
+ RUN  v4.1.9 /Users/thewytchhaus/workspace/amplenote-kanban-plugin
 
  Test Files  1 passed (1)
       Tests  4 passed (4)

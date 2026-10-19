@@ -1,1 +1,1 @@
-SKIPPED: Playbook is missing required `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/assets/INSTALL_RECIPES.md`. The plan cannot be fully constructed without it.
+SKIPPED: Playbook is missing required `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/assets/INSTALL_RECIPES.md`. The plan cannot be fully constructed without it.

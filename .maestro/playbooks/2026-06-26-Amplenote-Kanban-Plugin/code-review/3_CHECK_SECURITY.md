@@ -4,9 +4,9 @@
 
 - **Playbook**: Code Review
 - **Agent**: Amplenote Kanban
-- **Project**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin
+- **Project**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin
 - **Date**: 2026-06-27
-- **Working Folder**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
+- **Working Folder**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
 
 ## Purpose
 
@@ -14,13 +14,13 @@ Perform a security-focused review of the code changes, checking for common vulne
 
 ## Prerequisites
 
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` exists from Document 1
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` exists from Document 1
 
 ## Tasks
 
 ### Task 1: Load Context
 
-- [x] **Read scope**: Load `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` to identify high-risk files.
+- [x] **Read scope**: Load `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` to identify high-risk files.
 
 <!-- maestro:halt: Review scope indicates an empty diff. Halting security review as there are no files to check. -->
 
@@ -107,7 +107,7 @@ Perform a security-focused review of the code changes, checking for common vulne
 
 ### Task 5: Document Security Issues
 
-- [ ] **Create SECURITY_ISSUES.md**: Write findings to `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/SECURITY_ISSUES.md`:
+- [ ] **Create SECURITY_ISSUES.md**: Write findings to `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/SECURITY_ISSUES.md`:
 
 ```markdown
 # Security Review Findings

@@ -2,7 +2,7 @@
 
 **Review Date**: 2026-06-27
 **Reviewer**: Amplenote Kanban
-**Project**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin
+**Project**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin
 
 ---
 

@@ -4,9 +4,9 @@
 
 - **Playbook**: Code Review
 - **Agent**: Amplenote Kanban
-- **Project**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin
+- **Project**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin
 - **Date**: 2026-06-27
-- **Working Folder**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
+- **Working Folder**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
 
 ## Purpose
 
@@ -56,7 +56,7 @@ NOTE: *(Update the URL above before running this playbook)*
 
 ### Task 4: Create Scope Document
 
-- [ ] **Write REVIEW_SCOPE.md**: Create `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` with:
+- [ ] **Write REVIEW_SCOPE.md**: Create `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` with:
 
 ```markdown
 # PR Review Scope

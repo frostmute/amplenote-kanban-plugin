@@ -4,9 +4,9 @@
 
 - **Playbook**: Superpowers Setup
 - **Agent**: Amplenote Kanban
-- **Project**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin
+- **Project**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin
 - **Date**: 2026-06-27
-- **Working Folder**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
+- **Working Folder**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
 
 ## Purpose
 
@@ -16,10 +16,10 @@ The agent is verifying its **own** environment. This is unusual, and there is a 
 
 ## Inputs
 
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/PROVIDER.md`
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/INSTALL_PLAN.md`
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/INSTALL_LOG.md`
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/USER_ACTIONS.md` (may not exist if no user actions were needed)
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/PROVIDER.md`
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/INSTALL_PLAN.md`
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/INSTALL_LOG.md`
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/USER_ACTIONS.md` (may not exist if no user actions were needed)
 
 ## Tasks
 
@@ -63,7 +63,7 @@ The agent is verifying its **own** environment. This is unusual, and there is a 
 
 ### Task 4: Write `VERIFY.md`
 
-- [x] **Write `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/VERIFY.md`** (the outer fence here uses four backticks so the inner three-backtick fences render correctly — replicate that when you write the file):
+- [x] **Write `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/VERIFY.md`** (the outer fence here uses four backticks so the inner three-backtick fences render correctly — replicate that when you write the file):
 
   ````markdown
   # Verification Report

@@ -20,4 +20,4 @@ Since `INSTALL_RECIPES.md` was missing from the playbook assets directory, I can
 ## User-Required Steps
 
 ## Skip / Block
-Playbook is missing required `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/assets/INSTALL_RECIPES.md`. The plan cannot be fully constructed without it.
+Playbook is missing required `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/assets/INSTALL_RECIPES.md`. The plan cannot be fully constructed without it.

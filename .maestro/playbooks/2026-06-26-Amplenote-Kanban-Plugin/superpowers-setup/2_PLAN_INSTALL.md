@@ -4,9 +4,9 @@
 
 - **Playbook**: Superpowers Setup
 - **Agent**: Amplenote Kanban
-- **Project**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin
+- **Project**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin
 - **Date**: 2026-06-27
-- **Working Folder**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
+- **Working Folder**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
 
 ## Purpose
 
@@ -14,8 +14,8 @@ Turn the detected provider into a concrete, ordered list of install actions. Dis
 
 ## Inputs
 
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/PROVIDER.md` — produced by document 1
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/assets/INSTALL_RECIPES.md` — per-provider recipe lookup
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/PROVIDER.md` — produced by document 1
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/assets/INSTALL_RECIPES.md` — per-provider recipe lookup
 
 ## Tasks
 
@@ -23,7 +23,7 @@ Turn the detected provider into a concrete, ordered list of install actions. Dis
 
 - [x] **Read `PROVIDER.md`** and extract the canonical provider value and the "Supported by Superpowers?" verdict.
 
-- [x] **Read the recipe section for the detected provider** in `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/assets/INSTALL_RECIPES.md`. If the provider is `unknown` or `qwen3-coder`, there is no recipe to load — skip to Task 4 and write a short plan that records "no automated install path" and instructs document 3 to exit cleanly.
+- [x] **Read the recipe section for the detected provider** in `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/assets/INSTALL_RECIPES.md`. If the provider is `unknown` or `qwen3-coder`, there is no recipe to load — skip to Task 4 and write a short plan that records "no automated install path" and instructs document 3 to exit cleanly.
 
 ### Task 2: Check prerequisites
 
@@ -50,7 +50,7 @@ Turn the detected provider into a concrete, ordered list of install actions. Dis
 
 - [x] **Provider-specific prerequisite check**:
 
-  - `opencode`: locate the active config file. Check in this order: `</Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin>/opencode.json`, then `~/.config/opencode/opencode.json`. Record which one (if any) exists. If neither, document 3 will create `~/.config/opencode/opencode.json`.
+  - `opencode`: locate the active config file. Check in this order: `</Users/thewytchhaus/workspace/amplenote-kanban-plugin>/opencode.json`, then `~/.config/opencode/opencode.json`. Record which one (if any) exists. If neither, document 3 will create `~/.config/opencode/opencode.json`.
   - All other providers: no extra prerequisite check.
 
 ### Task 3: Decide automation strategy
@@ -65,7 +65,7 @@ Turn the detected provider into a concrete, ordered list of install actions. Dis
 
 ### Task 4: Write `INSTALL_PLAN.md`
 
-- [x] **Write `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/INSTALL_PLAN.md`** using this structure:
+- [x] **Write `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/INSTALL_PLAN.md`** using this structure:
 
   ```markdown
   # Install Plan

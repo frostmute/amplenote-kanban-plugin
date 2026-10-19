@@ -26,4 +26,4 @@ The installation was skipped, so no in-session probe was performed.
 SKIPPED
 
 ## Notes
-The installation was skipped because the playbook is missing the required `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/assets/INSTALL_RECIPES.md` file.
+The installation was skipped because the playbook is missing the required `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/assets/INSTALL_RECIPES.md` file.

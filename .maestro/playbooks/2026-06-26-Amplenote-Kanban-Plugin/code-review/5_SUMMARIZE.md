@@ -4,9 +4,9 @@
 
 - **Playbook**: Code Review
 - **Agent**: Amplenote Kanban
-- **Project**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin
+- **Project**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin
 - **Date**: 2026-06-27
-- **Working Folder**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
+- **Working Folder**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
 
 ## Purpose
 
@@ -14,10 +14,10 @@ Compile all review findings into a comprehensive summary with actionable feedbac
 
 ## Prerequisites
 
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` - PR scope and changed files
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/CODE_ISSUES.md` - Code quality issues
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/SECURITY_ISSUES.md` - Security findings
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/TEST_GAPS.md` - Test coverage gaps
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` - PR scope and changed files
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/CODE_ISSUES.md` - Code quality issues
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/SECURITY_ISSUES.md` - Security findings
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/TEST_GAPS.md` - Test coverage gaps
 
 ## Tasks
 
@@ -54,14 +54,14 @@ Compile all review findings into a comprehensive summary with actionable feedbac
 
 ### Task 4: Create Summary Document
 
-- [x] **Write REVIEW_SUMMARY.md**: Create `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SUMMARY.md`:
+- [x] **Write REVIEW_SUMMARY.md**: Create `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SUMMARY.md`:
 
 ```markdown
 # Pull Request Review Summary
 
 **Review Date**: 2026-06-27
 **Reviewer**: Amplenote Kanban
-**Project**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin
+**Project**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin
 
 ---
 
@@ -132,7 +132,7 @@ Compile all review findings into a comprehensive summary with actionable feedbac
 
 ### Task 5: Generate PR Comment (Optional)
 
-- [x] **Create concise PR comment**: If desired, create a shorter version suitable for posting as a PR comment in `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/PR_COMMENT.md`:
+- [x] **Create concise PR comment**: If desired, create a shorter version suitable for posting as a PR comment in `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/PR_COMMENT.md`:
 
 ```markdown
 ## Code Review Summary

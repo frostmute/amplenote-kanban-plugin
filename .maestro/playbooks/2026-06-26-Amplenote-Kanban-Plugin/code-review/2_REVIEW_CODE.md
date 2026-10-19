@@ -4,9 +4,9 @@
 
 - **Playbook**: Code Review
 - **Agent**: Amplenote Kanban
-- **Project**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin
+- **Project**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin
 - **Date**: 2026-06-27
-- **Working Folder**: /Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
+- **Working Folder**: /Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin
 
 ## Purpose
 
@@ -14,11 +14,11 @@ Perform a thorough code review focusing on correctness, best practices, and code
 
 ## Prerequisites
 
-- `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` exists from Document 1
+- `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` exists from Document 1
 
 ## Tasks
 
-### Task 1: Read Scope Document\n\n- [ ] **Load context**: Read `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` to understand what files to review.
+### Task 1: Read Scope Document\n\n- [ ] **Load context**: Read `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/REVIEW_SCOPE.md` to understand what files to review.
 <!-- maestro:halt: REVIEW_SCOPE.md is missing because Document 1 was halted. Cannot determine files to review. -->
 
 ### Task 2: Review for Correctness
@@ -71,7 +71,7 @@ Perform a thorough code review focusing on correctness, best practices, and code
 
 ### Task 5: Document Issues
 
-- [ ] **Create CODE_ISSUES.md**: Write findings to `/Users/thewytchhaus/Documents/GitHub/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/CODE_ISSUES.md`:
+- [ ] **Create CODE_ISSUES.md**: Write findings to `/Users/thewytchhaus/workspace/amplenote-kanban-plugin/.maestro/playbooks/2026-06-26-Amplenote-Kanban-Plugin/CODE_ISSUES.md`:
 
 ```markdown
 # Code Review Issues
